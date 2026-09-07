@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPublicClient, http, formatEther, parseAbi, type Abi, type Address } from 'viem'
-import { robinhoodChain, MAIN_LAUNCHER_ADDRESS, MAIN_START_BLOCK, PONS_FACTORY_ADDRESS } from '../lib/chain'
+import { robinhoodChain, MAIN_LAUNCHER_ADDRESS, MAIN_START_BLOCK, PONS_FACTORY_ADDRESS, HIDDEN_COINS } from '../lib/chain'
 import { launcherAbi, splitterAbi } from '../lib/launcher'
 import { coins as mockCoins } from './mock'
 
@@ -188,7 +188,9 @@ async function loadChain(): Promise<Snapshot> {
   }
   activity.sort((a, b) => b.at - a.at || Number(b.block - a.block))
 
-  return { coins, activity, at: Date.now() }
+  const visible = coins.filter((c) => !HIDDEN_COINS.has(c.address.toLowerCase()))
+  const visibleActivity = activity.filter((a) => !HIDDEN_COINS.has(a.token.toLowerCase()))
+  return { coins: visible, activity: visibleActivity, at: Date.now() }
 }
 
 export function loadCoins(force = false): Promise<Snapshot> {
