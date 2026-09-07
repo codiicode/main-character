@@ -3,3 +3,6 @@ dist
 .env
 .env.*
 /logo.jpg
+contracts/out
+contracts/cache
+contracts/broadcast
