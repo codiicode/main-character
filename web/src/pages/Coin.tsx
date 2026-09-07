@@ -46,7 +46,6 @@ export default function Coin() {
   const kName = k?.name ?? c.kol
   const kHue = hueFor(c.kol)
   const kolShare = c.endorsed ? 2.0 : 1.0
-  const mainShare = c.endorsed ? 1.2 : 2.2
   const copy = () => { navigator.clipboard?.writeText(c.address); setCopied(true); setTimeout(() => setCopied(false), 1200) }
 
   return (
@@ -104,18 +103,16 @@ export default function Coin() {
               {c.endorsed ? <Tag tone="primary">Endorsed, KOL 2×</Tag> : <Tag tone="muted">Not endorsed yet</Tag>}
             </div>
             <div className="h-3.5 rounded-full overflow-hidden flex well p-[2px] gap-[2px]">
-              <div className="rounded-full bg-green" style={{ width: `${(kolShare / 3.7) * 100}%` }} />
-              <div className="rounded-full bg-warning" style={{ width: `${(0.5 / 3.7) * 100}%` }} />
-              <div className="rounded-full bg-primary flex-1" />
+              <div className="rounded-full bg-green" style={{ width: `${(kolShare / (kolShare + 0.5)) * 100}%` }} />
+              <div className="rounded-full bg-warning flex-1" />
             </div>
-            <div className="mt-3 grid grid-cols-3 gap-2 text-[14px]">
-              <div><div className="flex items-center gap-1.5 text-text-secondary"><span className="w-2 h-2 rounded-full bg-green" /> @{c.kol}</div><div className="font-bold tabular text-[20px]">{kolShare.toFixed(1)}%</div><div className="text-text-secondary text-[12px]">to their FOMO wallet</div></div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-[14px]">
+              <div><div className="flex items-center gap-1.5 text-text-secondary"><span className="w-2 h-2 rounded-full bg-green" /> @{c.kol}</div><div className="font-bold tabular text-[20px]">{kolShare === 2 ? '2%' : '1%'}</div><div className="text-text-secondary text-[12px]">of every trade, to their FOMO wallet</div></div>
               <div><div className="flex items-center gap-1.5 text-text-secondary"><span className="w-2 h-2 rounded-full bg-warning" /> Launcher</div><div className="font-bold tabular text-[20px]">0.5%</div><div className="text-text-secondary text-[12px] font-mono">{c.launcher}</div></div>
-              <div><div className="flex items-center gap-1.5 text-text-secondary"><span className="w-2 h-2 rounded-full bg-primary" /> MAIN</div><div className="font-bold tabular text-[20px]">{mainShare.toFixed(1)}%</div><div className="text-text-secondary text-[12px]">platform</div></div>
             </div>
             {!c.endorsed && (
               <div className="mt-4 well rounded-2xl p-3.5 text-[14px] flex flex-col sm:flex-row sm:items-center gap-3">
-                <span className="flex-1">Are you <b>@{c.kol}</b>? Endorse this coin and your share doubles to 2.0%.</span>
+                <span className="flex-1">Are you <b>@{c.kol}</b>? Endorse this coin and your share doubles to 2%.</span>
                 <Button size="sm" variant="primary">Endorse with X</Button>
               </div>
             )}
@@ -143,7 +140,7 @@ export default function Coin() {
           <Panel className="p-4 mt-4">
             <div className="text-[15px] font-bold mb-2">About {c.symbol}</div>
             <div className="grid grid-cols-2 gap-2 text-[14px]">
-              {[['Launched', `${c.createdAt} ago`], ['Venue', c.graduated ? 'Uniswap V4' : 'Bonding curve'], ['Creator tax', '3%'], ['Supply', '1B, fixed']].map(([l, v]) => (
+              {[['Launched', `${c.createdAt} ago`], ['Venue', c.graduated ? 'Uniswap V4' : 'Bonding curve'], ['KOL share', c.endorsed ? '2%' : '1%'], ['Supply', '1B, fixed']].map(([l, v]) => (
                 <div key={l} className="well rounded-xl p-2.5"><div className="text-text-secondary text-[12px]">{l}</div>{v}</div>
               ))}
             </div>

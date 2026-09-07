@@ -3,8 +3,8 @@ import { Button, Panel } from '../components/ui'
 
 const steps = [
   { icon: Rocket, title: 'Someone launches a coin for a KOL', body: 'Pick any trader on the FOMO leaderboard, name the coin, pay 0.0005 ETH plus gas. The coin goes live on Pons V2 and shows up in FOMO right away.' },
-  { icon: Coins, title: 'Fees flow to the KOL automatically', body: 'Every trade pays a 3.7% fee. 1.0% goes to the KOL\'s own FOMO wallet in ETH, 0.5% to whoever launched, and the rest to MAIN. No claiming, no forms.' },
-  { icon: BadgeCheck, title: 'The KOL endorses and doubles their share', body: 'Log in with X on MAIN. The endorsed coin gets a badge, the KOL\'s share becomes 2.0%, and MAIN\'s share drops to 1.2%. The launcher keeps 0.5%.' },
+  { icon: Coins, title: 'Fees flow to the KOL automatically', body: 'On every trade, 1% goes to the KOL\'s own FOMO wallet in ETH and 0.5% to whoever launched the coin. No claiming, no forms.' },
+  { icon: BadgeCheck, title: 'The KOL endorses and doubles their share', body: 'Log in with X on MAIN. The endorsed coin gets a badge and the KOL\'s share becomes 2% of every trade. The launcher keeps 0.5%.' },
 ]
 
 const faq = [
@@ -12,7 +12,7 @@ const faq = [
   ['Which wallet gets paid?', 'The EVM wallet FOMO created for that trader, the same one they use on Robinhood Chain. We read it from the FOMO leaderboard and check it on-chain.'],
   ['What if a KOL has no wallet yet?', 'Launch stays locked for them until FOMO has an EVM wallet on record. You can request the KOL and we\'ll unlock when it resolves.'],
   ['Where does the coin trade?', 'On Pons V2, the biggest launchpad on Robinhood Chain. It starts on a bonding curve and graduates into a locked Uniswap V4 pool. FOMO lists it automatically.'],
-  ['Can the fee split change later?', 'The 3% creator tax is locked at launch. Only the split between KOL and MAIN moves, and only when the KOL endorses.'],
+  ['Can the fee split change later?', 'Only one thing ever changes: the KOL\'s share goes from 1% to 2% when they endorse. The launcher\'s 0.5% is fixed for the life of the coin.'],
   ['Who can trigger payouts?', 'Anyone. Payouts are permissionless and MAIN runs them automatically, so KOLs never have to do anything.'],
 ]
 
@@ -38,13 +38,13 @@ export default function HowItWorks() {
         <h2 className="text-[20px] mb-3">The fee, trade by trade</h2>
         <div className="grid sm:grid-cols-2 gap-4">
           {[
-            { label: 'Before endorsement', rows: [['KOL', '1.0%', 'bg-green'], ['Launcher', '0.5%', 'bg-warning'], ['MAIN', '2.2%', 'bg-primary']] },
-            { label: 'After endorsement', rows: [['KOL', '2.0%', 'bg-green'], ['Launcher', '0.5%', 'bg-warning'], ['MAIN', '1.2%', 'bg-primary']] },
+            { label: 'Before endorsement', rows: [['KOL', '1%', 'bg-green'], ['Launcher', '0.5%', 'bg-warning']] },
+            { label: 'After endorsement', rows: [['KOL', '2%', 'bg-green'], ['Launcher', '0.5%', 'bg-warning']] },
           ].map(({ label, rows }) => (
             <div key={label} className="well rounded-2xl p-4">
               <div className="text-[13px] text-text-secondary mb-2">{label}</div>
               <div className="h-3 rounded-full overflow-hidden flex bg-black/40 p-[2px] gap-[2px]">
-                {rows.map(([n, v, c]) => <div key={n} className={`rounded-full ${c}`} style={{ width: `${(parseFloat(v) / 3.7) * 100}%` }} />)}
+                {rows.map(([n, v, c]) => <div key={n} className={`rounded-full ${c}`} style={{ width: `${(parseFloat(v) / 2.5) * 100}%` }} />)}
               </div>
               <div className="mt-3 grid gap-1.5 text-[14px]">
                 {rows.map(([n, v, c]) => (
@@ -54,7 +54,7 @@ export default function HowItWorks() {
             </div>
           ))}
         </div>
-        <p className="text-text-tertiary text-[13px] mt-3">3.7% = Pons's 1% swap fee (70% to the creator side) plus a 3% creator tax set at launch. Pons keeps its 0.3%.</p>
+        <p className="text-text-tertiary text-[13px] mt-3">Paid in ETH on Robinhood Chain, on the bonding curve and after graduation alike.</p>
       </Panel>
 
       <h2 className="text-[22px] mt-10 mb-3">Questions</h2>

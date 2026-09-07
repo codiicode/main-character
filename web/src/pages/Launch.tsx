@@ -98,14 +98,13 @@ export default function Launch() {
             <div className="font-bold text-[16px] mb-3">Review and launch</div>
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="well rounded-2xl p-3.5">
-                <div className="text-[13px] text-text-secondary mb-2">Fee on every trade</div>
-                <div className="h-3 rounded-full overflow-hidden flex bg-black/40 p-[2px] gap-[2px]"><div className="rounded-full bg-green" style={{ width: '27%' }} /><div className="rounded-full bg-warning" style={{ width: '13.5%' }} /><div className="rounded-full bg-primary flex-1" /></div>
-                <div className="mt-2.5 grid grid-cols-3 text-[13px]">
-                  <div><span className="text-green font-bold text-[15px]">1.0%</span><br />KOL</div>
-                  <div><span className="text-warning font-bold text-[15px]">0.5%</span><br />you</div>
-                  <div><span className="text-[#aab5ff] font-bold text-[15px]">2.2%</span><br />MAIN</div>
+                <div className="text-[13px] text-text-secondary mb-2">On every trade</div>
+                <div className="h-3 rounded-full overflow-hidden flex bg-black/40 p-[2px] gap-[2px]"><div className="rounded-full bg-green" style={{ width: '66.6%' }} /><div className="rounded-full bg-warning flex-1" /></div>
+                <div className="mt-2.5 grid grid-cols-2 text-[13px]">
+                  <div><span className="text-green font-bold text-[15px]">1%</span><br />to the KOL</div>
+                  <div><span className="text-warning font-bold text-[15px]">0.5%</span><br />to you</div>
                 </div>
-                <div className="text-[12px] text-text-tertiary mt-2.5 flex items-start gap-1"><Info size={12} className="mt-0.5 shrink-0" /> When the KOL endorses, they get 2.0% and MAIN drops to 1.2%. Your 0.5% never changes.</div>
+                <div className="text-[12px] text-text-tertiary mt-2.5 flex items-start gap-1"><Info size={12} className="mt-0.5 shrink-0" /> When the KOL endorses, their share doubles to 2%. Your 0.5% never changes.</div>
               </div>
               <div className="well rounded-2xl p-3.5">
                 <div className="text-[13px] text-text-secondary mb-2">Buy at launch (optional)</div>
