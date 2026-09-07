@@ -4,8 +4,8 @@ import { Button } from './components/ui'
 
 function Logo() {
   return (
-    <Link to="/" className="flex items-center gap-2.5 select-none">
-      <span className="grid place-items-center w-8 h-8 rounded-[10px] bg-text-primary text-bg-primary font-black text-[15px] shadow-[inset_0_1px_0_rgba(255,255,255,.6),0_6px_16px_-6px_rgba(255,255,255,.5)]">M</span>
+    <Link to="/" className="flex items-center gap-2.5 select-none" aria-label="MAIN home">
+      <img src="/brand/logo.png" alt="" width={34} height={34} className="w-[34px] h-auto drop-shadow-[0_4px_14px_rgba(255,255,255,.28)]" />
       <span className="text-[22px] font-bold tracking-tight lowercase">main</span>
     </Link>
   )
