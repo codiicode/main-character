@@ -213,6 +213,129 @@
   },
   {
     "type": "function",
+    "name": "launchFor",
+    "inputs": [
+      {
+        "name": "input",
+        "type": "tuple",
+        "internalType": "struct MainLauncher.LaunchInput",
+        "components": [
+          {
+            "name": "name",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "logo",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "socials",
+            "type": "tuple",
+            "internalType": "struct IPonsV2LaunchFactory.Socials",
+            "components": [
+              {
+                "name": "twitter",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "telegram",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "discord",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "website",
+                "type": "string",
+                "internalType": "string"
+              },
+              {
+                "name": "farcaster",
+                "type": "string",
+                "internalType": "string"
+              }
+            ]
+          },
+          {
+            "name": "expectedEconomics",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "salt",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "kind",
+            "type": "uint8",
+            "internalType": "enum MainLauncher.Kind"
+          },
+          {
+            "name": "kolRef",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "kolAccounts",
+            "type": "address[]",
+            "internalType": "address[]"
+          },
+          {
+            "name": "kolWeights",
+            "type": "uint96[]",
+            "internalType": "uint96[]"
+          },
+          {
+            "name": "minTokensOut",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      },
+      {
+        "name": "launcher",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "curve",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "splitter",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
     "name": "owner",
     "inputs": [],
     "outputs": [
@@ -265,6 +388,19 @@
         "internalType": "bytes32"
       }
     ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "relayer",
+    "inputs": [],
     "outputs": [
       {
         "name": "",
@@ -330,6 +466,19 @@
         "name": "id",
         "type": "uint256",
         "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setRelayer",
+    "inputs": [
+      {
+        "name": "relayer_",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "outputs": [],
@@ -610,6 +759,12 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      },
+      {
+        "name": "relayed",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
       }
     ],
     "anonymous": false
@@ -691,6 +846,19 @@
         "name": "newOwner",
         "type": "address",
         "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RelayerUpdated",
+    "inputs": [
+      {
+        "name": "relayer",
+        "type": "address",
+        "indexed": false,
         "internalType": "address"
       }
     ],
@@ -806,6 +974,11 @@
         "internalType": "uint256"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "NotRelayer",
+    "inputs": []
   },
   {
     "type": "error",

@@ -7,6 +7,7 @@ import { useCoins, isEndorsedRef } from '../data/coins'
 import { useAllKols, resolveKol, hueFor, shortAddr, type Kol } from '../data/kols'
 import { Avatar, Button, Pnl, Tag, Verified, Panel } from '../components/ui'
 import { ConnectButton } from '../components/Connect'
+import { Turnstile } from '../components/Turnstile'
 import { MAIN_LAUNCHER_ADDRESS, PONS_FACTORY_ADDRESS, robinhoodChain, explorerTx } from '../lib/chain'
 import { launcherAbi, ponsFactoryAbi, toLaunchInput, randomSalt, devBuyToWei, parseCoinLaunched } from '../lib/launcher'
 import { largeAvatar } from '../components/ui'
@@ -40,6 +41,11 @@ export default function Launch() {
   const [logoUrl, setLogoUrl] = useState('')
   const [devBuy, setDevBuy] = useState('0')
   const [tx, setTx] = useState<TxState>({ step: 'idle' })
+  // Free mode: MAIN's relayer pays the fee and gas; no wallet needed.
+  const [free, setFree] = useState(true)
+  const [payout, setPayout] = useState('')
+  const [tsToken, setTsToken] = useState('')
+  const [freeTx, setFreeTx] = useState<{ s: 'idle' | 'busy' | 'done' | 'error'; msg?: string; token?: string }>({ s: 'idle' })
   const [launchFee, setLaunchFee] = useState<bigint | null>(null)
 
   // Clans derived from the leaderboard snapshot: members with a resolved wallet share the KOL pool.
@@ -65,6 +71,8 @@ export default function Launch() {
   const targetReady = mode === 'KOL' ? !!kol : !!clanSel && clanSel.funded.length > 0
   const pendingWallet = mode === 'KOL' && !!kol && !kol.wallets.evm
   const canLaunch = targetReady && name.trim().length > 1 && symbol.trim().length > 1 && !!MAIN_LAUNCHER_ADDRESS
+  const payoutOk = !payout.trim() || /^0x[0-9a-fA-F]{40}$/.test(payout.trim())
+  const canFree = targetReady && name.trim().length > 1 && symbol.trim().length > 1 && payoutOk && !!tsToken
 
   useEffect(() => {
     const h = params.get('kol')
@@ -131,6 +139,35 @@ export default function Launch() {
     } catch (e) {
       const msg = e instanceof Error ? e.message.split('\n')[0] : String(e)
       setTx({ step: 'error', msg: /user rejected|denied/i.test(msg) ? 'You cancelled in your wallet.' : msg })
+    }
+  }
+
+  async function launchFree() {
+    setFreeTx({ s: 'busy' })
+    try {
+      const r = await fetch('/api/free-launch', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          mode,
+          handle: mode === 'KOL' ? kol?.handle : undefined,
+          clan: mode === 'CLAN' ? clanSel?.name : undefined,
+          name: name.trim(),
+          symbol: symbol.trim().toUpperCase(),
+          description: desc.trim(),
+          logo: logoUrl.trim(),
+          twitter: twitter.trim(),
+          website: website.trim(),
+          payout: payout.trim(),
+          turnstile: tsToken,
+        }),
+      })
+      const j = (await r.json()) as { ok?: boolean; token?: string; error?: string }
+      if (!r.ok || !j.ok) { setFreeTx({ s: 'error', msg: j.error ?? 'Launch failed.' }); return }
+      setFreeTx({ s: 'done', token: j.token })
+      if (j.token) setTimeout(() => nav(`/coin/${j.token}`), 1200)
+    } catch {
+      setFreeTx({ s: 'error', msg: 'Could not reach MAIN. Check your connection.' })
     }
   }
 
@@ -243,7 +280,13 @@ export default function Launch() {
           </Panel>
 
           <Panel strong className="p-4 md:p-5">
-            <div className="font-bold text-[16px] mb-3">Review and launch</div>
+            <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+              <div className="font-bold text-[16px]">Review and launch</div>
+              <div className="well rounded-full p-1 flex gap-1">
+                <button onClick={() => setFree(true)} className={`h-8 px-3.5 rounded-full text-[13px] font-bold transition-all ${free ? 'glass' : 'text-text-secondary'}`}>Free, no wallet</button>
+                <button onClick={() => setFree(false)} className={`h-8 px-3.5 rounded-full text-[13px] font-bold transition-all ${!free ? 'glass' : 'text-text-secondary'}`}>With my wallet</button>
+              </div>
+            </div>
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="well rounded-2xl p-3.5">
                 <div className="text-[13px] text-text-secondary mb-2">On every trade</div>
@@ -254,6 +297,13 @@ export default function Launch() {
                 </div>
                 <div className="text-[12px] text-text-tertiary mt-2.5">When the KOL endorses, their share doubles to 2%. Your 0.5% never changes.</div>
               </div>
+              {free ? (
+                <div className="well rounded-2xl p-3.5">
+                  <div className="text-[13px] text-text-secondary mb-2">Where your 0.5% goes (optional)</div>
+                  <input value={payout} onChange={(e) => setPayout(e.target.value.trim())} placeholder="0x… address on Robinhood Chain" className={`glass w-full h-11 rounded-xl px-4 text-[14px] font-mono outline-none ${payout && !payoutOk ? 'ring-1 ring-red' : ''}`} />
+                  <div className="text-[12px] text-text-tertiary mt-2.5">MAIN pays the launch fee and gas. Leave this empty and your launcher share goes to MAIN. No first buy in free mode.</div>
+                </div>
+              ) : (
               <div className="well rounded-2xl p-3.5">
                 <div className="text-[13px] text-text-secondary mb-2">Buy at launch (optional)</div>
                 <div className="flex items-center gap-2">
@@ -262,11 +312,23 @@ export default function Launch() {
                 </div>
                 <div className="text-[12px] text-text-tertiary mt-2.5">Launch fee {launchFee != null ? formatEther(launchFee) : '0.0005'} ETH plus gas. Your first buy skips the launch-window snipe tax. 1B supply, liquidity locked on Pons V2.</div>
               </div>
+              )}
             </div>
 
             {pendingWallet && <div className="mt-4 well rounded-2xl p-3 text-[13px] text-warning">FOMO hasn't given @{kol!.handle} an EVM wallet yet. You can launch anyway: their 1% is held in the coin's fee splitter and released to their wallet as soon as FOMO creates one.</div>}
             {!MAIN_LAUNCHER_ADDRESS && <div className="mt-4 well rounded-2xl p-3 text-[13px] text-warning">Launch contract isn't deployed yet. Everything else works; this button goes live after deployment.</div>}
 
+            {free ? (
+              <div className="mt-4">
+                <Turnstile onToken={setTsToken} />
+                <Button variant="primary" size="lg" className="w-full mt-2" disabled={!canFree || freeTx.s === 'busy' || !MAIN_LAUNCHER_ADDRESS} onClick={launchFree}>
+                  {freeTx.s === 'busy' ? 'Launching on Pons, MAIN pays' : freeTx.s === 'done' ? 'Launched' : `Launch ${symbol ? '$' + symbol : 'coin'} for free`}
+                </Button>
+                {freeTx.s === 'idle' && !canFree && <p className="text-text-tertiary text-[12px] text-center mt-2">{!targetReady ? (mode === 'KOL' ? 'Pick a KOL to continue' : 'Pick a clan with wallets') : name.trim().length < 2 || symbol.trim().length < 2 ? 'Add a name and ticker' : !payoutOk ? 'That payout address is not valid' : 'Waiting for the human check'}</p>}
+                {freeTx.s === 'done' && <p className="text-green text-[13px] text-center mt-2">Live. Taking you to the coin page.</p>}
+                {freeTx.s === 'error' && <p className="text-red text-[13px] text-center mt-2">{freeTx.msg} <button className="underline" onClick={() => setFreeTx({ s: 'idle' })}>Try again</button></p>}
+              </div>
+            ) : (
             <div className="mt-4">
               {!isConnected ? (
                 <div className="flex flex-col sm:flex-row items-center gap-3"><ConnectButton size="lg" /><span className="text-[13px] text-text-secondary">Connect a wallet with a little ETH on Robinhood Chain to launch.</span></div>
@@ -282,6 +344,7 @@ export default function Launch() {
               {tx.step === 'done' && <p className="text-green text-[13px] text-center mt-2">Live. Taking you to the coin page.</p>}
               {tx.step === 'error' && <p className="text-red text-[13px] text-center mt-2">{tx.msg} <button className="underline" onClick={() => setTx({ step: 'idle' })}>Try again</button></p>}
             </div>
+            )}
           </Panel>
         </section>
       </div>

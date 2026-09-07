@@ -6,24 +6,45 @@ import { Button } from './ui'
 
 export const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`
 
-/** Header button: connects an injected wallet, shows the address, offers switch/disconnect. */
+/** Header button: connects a wallet (extension or WalletConnect), shows the address, offers switch/disconnect. */
 export function ConnectButton({ size = 'sm' }: { size?: 'sm' | 'md' | 'lg' }) {
   const { address, isConnected, chainId } = useAccount()
-  const { connect, connectors, isPending, error } = useConnect()
+  const { connect, connectors, isPending, error, variables } = useConnect()
   const { disconnect } = useDisconnect()
   const { switchChain, isPending: switching } = useSwitchChain()
   const [open, setOpen] = useState(false)
   const { data: bal } = useBalance({ address, chainId: robinhoodChain.id, query: { enabled: !!address } })
 
   if (!isConnected || !address) {
-    const c = connectors[0]
+    const injectedC = connectors.find((c) => c.type === 'injected' || c.id === 'mock')
+    const wc = connectors.find((c) => c.type === 'walletConnect')
+    const hasExtension = typeof window !== 'undefined' && !!(window as { ethereum?: unknown }).ethereum
+    // One obvious choice → connect straight away. Two → small chooser.
+    const single = !wc
+    void variables
     return (
       <div className="relative">
-        <Button variant="primary" size={size} onClick={() => c && connect({ connector: c })} disabled={isPending || !c}>
+        <Button variant="primary" size={size} onClick={() => (single && injectedC ? connect({ connector: injectedC }) : setOpen((o) => !o))} disabled={isPending}>
           {isPending ? 'Connecting' : 'Connect'}
         </Button>
-        {error && <div className="absolute right-0 mt-2 w-64 panel rounded-xl p-3 text-[13px] text-red">{error.message.split('\n')[0]}</div>}
-        {!c && <div className="absolute right-0 mt-2 w-64 panel rounded-xl p-3 text-[13px] text-text-secondary">No wallet found. Install MetaMask, Rabby or Coinbase Wallet.</div>}
+        {open && (
+          <div className="absolute right-0 mt-2 w-64 panel panel-strong rounded-2xl p-2 z-50">
+            {injectedC && (
+              <button onClick={() => { connect({ connector: injectedC }); setOpen(false) }} className="w-full text-left px-3 py-2.5 rounded-xl row-hover text-[14px]">
+                <div className="font-bold">Browser wallet</div>
+                <div className="text-text-secondary text-[12px]">{hasExtension ? 'MetaMask, Rabby, Coinbase Wallet' : 'No extension found in this browser'}</div>
+              </button>
+            )}
+            {wc && (
+              <button onClick={() => { connect({ connector: wc }); setOpen(false) }} className="w-full text-left px-3 py-2.5 rounded-xl row-hover text-[14px]">
+                <div className="font-bold">WalletConnect</div>
+                <div className="text-text-secondary text-[12px]">Scan with any mobile wallet</div>
+              </button>
+            )}
+          </div>
+        )}
+        {error && !isPending && <div className="absolute right-0 mt-2 w-64 panel rounded-xl p-3 text-[13px] text-red z-50">{error.message.split('\n')[0]}</div>}
+        {!injectedC && !wc && <div className="absolute right-0 mt-2 w-64 panel rounded-xl p-3 text-[13px] text-text-secondary">No wallet found. Install MetaMask, Rabby or Coinbase Wallet.</div>}
       </div>
     )
   }

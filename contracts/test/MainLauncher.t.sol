@@ -267,6 +267,43 @@ contract MainLauncherTest is Test {
         assertEq(address(s).balance, kolShare * 2);
     }
 
+    // ------------------------------------------------------------------ relayed launches
+
+    function test_launchFor_onlyRelayer() public {
+        (address[] memory a, uint96[] memory w) = _single(kol);
+        vm.deal(makeAddr("random"), 1 ether);
+        vm.prank(makeAddr("random"));
+        vm.expectRevert(MainLauncher.NotRelayer.selector);
+        main.launchFor{value: FEE}(_input(a, w, MainLauncher.Kind.KOL), launcher);
+    }
+
+    function test_launchFor_creditsLauncherNotRelayer() public {
+        (address[] memory a, uint96[] memory w) = _single(kol);
+        vm.deal(signer, 1 ether); // relayer defaults to the signer
+        vm.prank(signer);
+        (address token, address curve, address splitter) = main.launchFor{value: FEE + 0.1 ether}(_input(a, w, MainLauncher.Kind.KOL), launcher);
+        MainSplitter s = MainSplitter(payable(splitter));
+        assertEq(s.launcher(), launcher, "launcher share goes to the named wallet");
+        assertEq(MockToken(token).balanceOf(launcher), 0.1 ether * 1000, "dev buy delivered to the named wallet");
+        assertEq(pons.lastExemptions(0), launcher);
+        assertEq(main.predictSplitter(launcher, keccak256("salt-1")), splitter, "salt namespaced by launcher, not relayer");
+        _tradeAndSweep(curve, 10 ether);
+        main.sweepAndDistribute(token);
+        uint256 intake = (10 ether + 0.1 ether) * 37 / 1000; // the relayed dev buy pays fees too
+        assertEq(launcher.balance, 10 ether + intake * LAUNCHER_BPS / 10_000, "launcher paid, never paid the fee");
+    }
+
+    function test_setRelayer() public {
+        address r = makeAddr("relayer");
+        main.setRelayer(r);
+        assertEq(main.relayer(), r);
+        (address[] memory a, uint96[] memory w) = _single(kol);
+        vm.deal(r, 1 ether);
+        vm.prank(r);
+        main.launchFor{value: FEE}(_input(a, w, MainLauncher.Kind.KOL), launcher);
+        assertEq(main.tokenCount(), 1);
+    }
+
     // ------------------------------------------------------------------ owner config
 
     function test_sharesValidation() public {

@@ -52,6 +52,7 @@ contract MainLauncher is Ownable2Step, ReentrancyGuard {
 
     address public treasury;
     address public signer; // MAIN backend key: endorsements and wallet resolution
+    address public relayer; // MAIN hot wallet that launches on behalf of users who have no wallet
     uint256 public launchConfigId;
     Shares public shares;
 
@@ -66,7 +67,8 @@ contract MainLauncher is Ownable2Step, ReentrancyGuard {
         Kind kind,
         string kolRef,
         address[] kolAccounts,
-        uint256 devBuyWei
+        uint256 devBuyWei,
+        bool relayed
     );
     event Endorsed(address indexed token, bool endorsed);
     event KolWalletSet(address indexed token, uint256 index, address account);
@@ -74,8 +76,10 @@ contract MainLauncher is Ownable2Step, ReentrancyGuard {
     event SharesUpdated(Shares shares);
     event TreasuryUpdated(address treasury);
     event SignerUpdated(address signer);
+    event RelayerUpdated(address relayer);
 
     error NotSigner();
+    error NotRelayer();
     error UnknownToken();
     error ZeroAddress();
     error BadShares();
@@ -95,6 +99,7 @@ contract MainLauncher is Ownable2Step, ReentrancyGuard {
         splitterImplementation = address(new MainSplitter());
         treasury = treasury_;
         signer = signer_;
+        relayer = signer_;
         _setShares(shares_);
     }
 
@@ -111,15 +116,38 @@ contract MainLauncher is Ownable2Step, ReentrancyGuard {
         nonReentrant
         returns (address token, address curve, address splitter)
     {
+        return _launch(input, msg.sender);
+    }
+
+    /**
+     * @notice Launch on behalf of `launcher`, paid by MAIN's relayer. Lets someone with no wallet get a coin out:
+     *         the relayer covers the Pons fee and gas, `launcher` receives the launcher share (and any first buy).
+     *         Pass the treasury as `launcher` when the user gave no payout address.
+     */
+    function launchFor(LaunchInput calldata input, address launcher)
+        external
+        payable
+        nonReentrant
+        returns (address token, address curve, address splitter)
+    {
+        if (msg.sender != relayer && msg.sender != owner()) revert NotRelayer();
+        if (launcher == address(0)) revert ZeroAddress();
+        return _launch(input, launcher);
+    }
+
+    function _launch(LaunchInput calldata input, address launcher)
+        private
+        returns (address token, address curve, address splitter)
+    {
         uint256 fee = pons.launchFee();
         if (msg.value < fee) revert BadDevBuy();
         uint256 devBuy = msg.value - fee;
 
         // 1. splitter clone, deterministic so the frontend can show the address before sending.
-        splitter = Clones.cloneDeterministic(splitterImplementation, keccak256(abi.encode(msg.sender, input.salt)));
+        splitter = Clones.cloneDeterministic(splitterImplementation, keccak256(abi.encode(launcher, input.salt)));
         MainSplitter(payable(splitter)).initialize(
             address(this),
-            msg.sender,
+            launcher,
             treasury,
             escrow,
             shares.kolBps,
@@ -145,7 +173,7 @@ contract MainLauncher is Ownable2Step, ReentrancyGuard {
         // The launcher's own wallet is declared up front so neither the buy below nor their own buys in
         // the launch window pay the snipe tax. This contract is exempt already as the Pons deployer.
         address[] memory exempt = new address[](1);
-        exempt[0] = msg.sender;
+        exempt[0] = launcher;
         (token, curve) = pons.launchToken{value: fee}(params, launchConfigId, address(0), exempt);
         MainSplitter(payable(splitter)).setToken(token);
         splitterOf[token] = splitter;
@@ -154,10 +182,10 @@ contract MainLauncher is Ownable2Step, ReentrancyGuard {
         // 3. optional first buy. Bought to this contract (exempt) and handed to the launcher.
         if (devBuy > 0) {
             uint256 got = IPonsV2BondingCurve(curve).buy{value: devBuy}(devBuy, input.minTokensOut, address(this));
-            IERC20Minimal(token).transfer(msg.sender, got);
+            IERC20Minimal(token).transfer(launcher, got);
         }
 
-        emit CoinLaunched(token, curve, splitter, msg.sender, input.kind, input.kolRef, input.kolAccounts, devBuy);
+        emit CoinLaunched(token, curve, splitter, launcher, input.kind, input.kolRef, input.kolAccounts, devBuy, msg.sender != launcher);
     }
 
     /// @notice Splitter address a launch from `launcher` with `salt` will get.
@@ -219,6 +247,12 @@ contract MainLauncher is Ownable2Step, ReentrancyGuard {
         if (treasury_ == address(0)) revert ZeroAddress();
         treasury = treasury_;
         emit TreasuryUpdated(treasury_);
+    }
+
+    function setRelayer(address relayer_) external onlyOwner {
+        if (relayer_ == address(0)) revert ZeroAddress();
+        relayer = relayer_;
+        emit RelayerUpdated(relayer_);
     }
 
     function setSigner(address signer_) external onlyOwner {
