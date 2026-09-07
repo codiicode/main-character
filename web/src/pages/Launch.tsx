@@ -133,6 +133,8 @@ export default function Launch() {
   }
 
   const typed = q.trim().replace(/^@/, '')
+  const exact = kols.some((k) => k.handle.toLowerCase() === typed.toLowerCase())
+  const canLookup = mode === 'KOL' && typed.length >= 2 && !exact
   const busy = tx.step === 'preparing' || tx.step === 'signing' || tx.step === 'mining'
 
   return (
@@ -148,7 +150,7 @@ export default function Launch() {
               <button key={m} onClick={() => { setMode(m); setQ('') }} className={`h-9 rounded-full text-[14px] font-bold transition-all ${mode === m ? 'glass' : 'text-text-secondary'}`}>{m === 'KOL' ? 'One trader' : 'A clan'}</button>
             ))}
           </div>
-          <form className="well h-11 rounded-xl flex items-center gap-2 px-3" onSubmit={(e) => { e.preventDefault(); if (mode === 'KOL' && typed && list.length === 0) void doLookup(typed) }}>
+          <form className="well h-11 rounded-xl flex items-center gap-2 px-3" onSubmit={(e) => { e.preventDefault(); if (canLookup && lookup.state === 'idle') void doLookup(typed) }}>
             <Search size={16} className="text-text-secondary" />
             <input value={q} onChange={(e) => { setQ(e.target.value); setLookup({ state: 'idle' }) }} placeholder={mode === 'KOL' ? 'Type any FOMO handle' : 'Search clans'} className="flex-1 bg-transparent outline-none text-[15px] placeholder:text-text-tertiary" />
           </form>
@@ -181,10 +183,10 @@ export default function Launch() {
                 </button>
               )
             })}
-            {mode === 'KOL' && !loading && typed && list.length === 0 && (
+            {!loading && canLookup && (
               <div className="p-4 text-center text-[14px] text-text-secondary">
                 {lookup.state === 'busy' && <div>Looking up @{typed} on FOMO</div>}
-                {lookup.state === 'idle' && (<><div>@{typed} isn't on the leaderboard.</div><Button size="sm" variant="glass" className="mt-3" onClick={() => doLookup(typed)}>Look up @{typed} on FOMO</Button></>)}
+                {lookup.state === 'idle' && (<><div>{list.length ? "Not who you're looking for? Any FOMO trader works." : `@${typed} isn't on the leaderboard.`}</div><Button size="sm" variant="glass" className="mt-3" onClick={() => doLookup(typed)}>Look up @{typed} on FOMO</Button></>)}
                 {lookup.state === 'none' && (<><div>No FOMO trader called @{typed}.</div>{lookup.candidates && lookup.candidates.length > 0 && <div className="mt-2 flex flex-wrap justify-center gap-1.5">{lookup.candidates.map((c) => <button key={c} onClick={() => doLookup(c)} className="glass rounded-full px-3 h-8 text-[13px] font-semibold">@{c}</button>)}</div>}</>)}
                 {lookup.state === 'error' && <div className="text-red">{lookup.msg}</div>}
               </div>

@@ -24,6 +24,8 @@ export default function SearchPage() {
   const showK = tab !== 'Coins'
   const showC = tab !== 'KOLs'
   const nothing = !!s && (!showK || kolHits.length === 0) && (!showC || coinHits.length === 0)
+  const exact = kols.some((k) => k.handle.toLowerCase() === s)
+  const canLookup = showK && s.length >= 2 && !exact && !nothing
 
   async function doLookup(handle: string) {
     setLookup({ state: 'busy' })
@@ -35,7 +37,7 @@ export default function SearchPage() {
 
   return (
     <div className="max-w-[820px] mx-auto">
-      <form className="panel panel-strong rounded-full h-14 flex items-center gap-3 px-5" onSubmit={(e) => { e.preventDefault(); if (s && kolHits.length === 0) void doLookup(s) }}>
+      <form className="panel panel-strong rounded-full h-14 flex items-center gap-3 px-5" onSubmit={(e) => { e.preventDefault(); if (s.length >= 2 && !exact && lookup.state === 'idle') void doLookup(s) }}>
         <SearchIcon size={18} className="text-text-secondary" />
         <input ref={ref} value={q} onChange={(e) => { setQ(e.target.value); setLookup({ state: 'idle' }) }} placeholder="Any FOMO handle, coin or address" className="flex-1 bg-transparent outline-none text-[17px] placeholder:text-text-tertiary" />
         {q && <button type="button" onClick={() => setQ('')} aria-label="Clear" className="text-text-secondary hover:text-text-primary"><X size={18} /></button>}
@@ -68,6 +70,14 @@ export default function SearchPage() {
             ))}
           </Panel>
         </>
+      )}
+
+      {canLookup && (
+        <Panel className="mb-5 p-4 flex flex-col sm:flex-row sm:items-center gap-3 text-[14px]">
+          <span className="flex-1 text-text-secondary">{lookup.state === 'busy' ? `Looking up @${s} on FOMO` : lookup.state === 'none' ? `No FOMO trader called @${s}.` : lookup.state === 'error' ? lookup.msg : `Not who you're looking for? Any FOMO trader works.`}</span>
+          {lookup.state === 'idle' && <Button size="sm" variant="glass" onClick={() => doLookup(s)}>Look up @{s} on FOMO</Button>}
+          {lookup.state === 'none' && lookup.candidates?.length ? <div className="flex flex-wrap gap-1.5">{lookup.candidates.map((c) => <button key={c} onClick={() => doLookup(c)} className="glass rounded-full px-3 h-8 text-[13px] font-semibold">@{c}</button>)}</div> : null}
+        </Panel>
       )}
 
       {showC && coinHits.length > 0 && (
