@@ -80,3 +80,28 @@ Font: Satoshi 400/500/700 (Fontshare) nu; Aeonik när licens köpts. Ingen FOMO-
 - Verifiera escrow-adress on-chain (implementationen finns inte i repot).
 - fomoapi vs fomoscan som primär källa, kostnadstak.
 - Testplan: Foundry-tester för split/endorse, fork-test mot Pons på Robinhood Chain.
+
+## 8. Del 2–4, byggt 2026-09-07 (kväll)
+
+### Kontrakt (`contracts/`, Foundry, via-IR, solc 0.8.26)
+- `MainLauncher.launch(LaunchInput) payable` – en tx: klonar `MainSplitter` (EIP-1167, CREATE2 på `keccak(launcher, salt)`), anropar Pons `launchToken(params, 0, address(0), [launcher])` med klonen som `creatorFeeRecipient` och `creatorTaxBps=300`, valfritt dev-buy köpt till fabriken (snipe-exempt) och skickat till launchern. Event `CoinLaunched(token, curve, splitter, launcher, kind, kolRef, kolAccounts, devBuyWei)`.
+- `MainSplitter`: `distribute()` permissionless, claimar från Pons escrow, delar KOL-pott (viktade mottagare, klan = N), launcher, treasury. `sweep(curve)` – Pons låter fee-mottagaren (klonen) sopa kurvan; `MainLauncher.sweepAndDistribute(token)` gör sweep + distribute. `setEndorsed`, `setKolRecipient` via fabriken (signer/owner). Okända wallets ackumuleras i `pending[i]`, misslyckade pushar i `owed[addr]` (`withdraw()`).
+- Andelar i bps av intaget: KOL 2703 (endorsed 5405), launcher 1351, treasury rest. Verifierat i fork-test: exakt 100 bps av volymen till KOL, dubbelt efter endorse.
+- **Pons-fakta som styrde designen:** kurvans `deployer` = creatorFeeRecipient (inte tx-avsändaren); snipe-skatt 99 % som avtar över 3 s, undantag via `launchToken`-överlagringen med lista; fees i native ETH; escrow per adress.
+- Tester: 15 enhetstester (mock-Pons) + 1 fork-test mot riktiga fabriken. `forge test` i `contracts/`.
+- Deploy: `contracts/script/Deploy.s.sol` (DEPLOYER_PK, TREASURY, SIGNER). Signer-adress för backend: `SIGNER_ADDRESS` i `.env`.
+
+### Frontend
+- wagmi + viem, `src/lib/chain.ts` (chainId 4663). `VITE_MAIN_LAUNCHER`, `VITE_MAIN_START_BLOCK`, `VITE_RPC`, `VITE_DEV_MOCK_WALLET` (dev: mock-wallet mot anvil-fork).
+- `src/data/coins.ts`: läser `CoinLaunched/Endorsed/Swept` + kurvreserver, `CurveBuy/Sell` (volym, köpare), splitter-stats. Mock som fallback utan kontrakt. Aktivitetsflöde på startsidan.
+- Launch: KOL- eller klan-läge. Klan = leaderboard-medlemmar med samma `clan.name` och EVM-wallet, lika vikt.
+- Endorse: `/endorse/:token`, X OAuth PKCE via Pages Functions, HMAC-session-cookie, `/api/endorse` matchar X-handle mot FOMO-handle (eller FOMO-profilens länkade X) och anropar `setEndorsed` med `SIGNER_PK`.
+- Delningskort: canvas 1200×630 klient-side (`ShareCard.tsx`), avatar via `/api/img` CORS-proxy. Watchlist i localStorage.
+
+### Secrets (Cloudflare Pages)
+Satta: `FOMOAPI_KEY`, `SESSION_SECRET`. Saknas: `X_CLIENT_ID`, `X_CLIENT_SECRET` (X developer app, callback `https://<domän>/api/x/callback`), `SIGNER_PK`, `MAIN_LAUNCHER`, `MAIN_START_BLOCK` (efter deploy). Bygg-tid: `VITE_MAIN_LAUNCHER`, `VITE_MAIN_START_BLOCK`.
+
+### Inte byggt
+- X-DM/tagg till KOL vid launch (kräver X:s betalda API-nivå för att posta).
+- Push-notiser för watchlist (kräver backend + service worker).
+- Riktig prisgraf och handel i MAIN (kräver trade-indexer).
