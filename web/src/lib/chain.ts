@@ -27,7 +27,7 @@ const connectors: CreateConnectorFn[] = devMock
             walletConnect({
               projectId: WC_PROJECT_ID,
               showQrModal: true,
-              metadata: { name: 'MAIN', description: 'Every trader is a main character.', url: 'https://main-character-c38.pages.dev', icons: ['https://main-character-c38.pages.dev/brand/logo-512.png'] },
+              metadata: { name: 'MAIN', description: 'Every trader is a main character.', url: 'https://maincharacter.family', icons: ['https://maincharacter.family/brand/logo-512.png'] },
             }),
           ]
         : []),
