@@ -53,6 +53,8 @@ export const MAIN_START_BLOCK = BigInt((import.meta.env.VITE_MAIN_START_BLOCK as
 export const TURNSTILE_SITE_KEY = (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) || '1x00000000000000000000AA'
 /** Coins to hide everywhere on the site (test launches). Comma-separated addresses. */
 export const HIDDEN_COINS = new Set(((import.meta.env.VITE_HIDDEN_COINS as string | undefined) || '').toLowerCase().split(',').map((a) => a.trim()).filter(Boolean))
+/** The platform token, once launched through MainLauncher. Empty = show the coming-soon card. */
+export const MAIN_TOKEN_ADDRESS = ((import.meta.env.VITE_MAIN_TOKEN as string | undefined) || '').toLowerCase()
 export const PONS_FACTORY_ADDRESS = '0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e' as const
 export const explorerAddress = (a: string) => `https://robinhoodchain.blockscout.com/address/${a}`
 export const explorerTx = (h: string) => `https://robinhoodchain.blockscout.com/tx/${h}`

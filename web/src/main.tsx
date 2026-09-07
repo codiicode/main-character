@@ -15,6 +15,7 @@ import SearchPage from './pages/SearchPage'
 import Me from './pages/Me'
 import HowItWorks from './pages/HowItWorks'
 import Endorse from './pages/Endorse'
+import Tokens from './pages/Tokens'
 import { Button, Empty } from './components/ui'
 
 const queryClient = new QueryClient()
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')!).render(
             <Route element={<App />}>
               <Route index element={<Home />} />
               <Route path="kols" element={<Kols />} />
+              <Route path="tokens" element={<Tokens />} />
               <Route path="kol/:handle" element={<Kol />} />
               <Route path="coin/:address" element={<Coin />} />
               <Route path="launch" element={<Launch />} />

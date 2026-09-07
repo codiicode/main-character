@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { fmtUsd, fmtCount } from '../data/mock'
+import { fmtUsd } from '../data/mock'
 import { useKols, pnlFor, hueFor, type Window } from '../data/kols'
 import { useCoins, coinsFor, isEndorsedRef, fmtEth, ago } from '../data/coins'
 import { Avatar, AvatarStack, Button, Pnl, Segment, Tag, Verified, Pill, Panel } from '../components/ui'
 import { short } from '../components/Connect'
+import { MainTokenCard } from '../components/MainTokenCard'
 
 function Medal({ rank }: { rank: number }) {
   if (rank > 3) return <span className="w-7 text-center text-text-secondary tabular text-[14px] font-semibold">{rank}</span>
@@ -45,8 +46,6 @@ export default function Home() {
   const ranked = useMemo(() => kols.filter((k) => k.rank[win] != null).sort((a, b) => pnlFor(b, win) - pnlFor(a, win)), [kols, win])
   const shown = ranked.filter((k) => (filter === 'All' ? true : filter === 'Endorsed' ? isEndorsedRef(coins, k.handle) : coinsFor(coins, k.handle).length === 0))
   const byHandle = (h: string) => kols.find((k) => k.handle.toLowerCase() === h.toLowerCase())
-  const top = ranked[0]
-  const topHue = top ? hueFor(top.handle) : 220
   const withPhoto = kols.filter((k) => k.avatar)
   const syncedAgo = syncedAt ? Math.max(1, Math.round((Date.now() - new Date(syncedAt).getTime()) / 60000)) : null
   const shownCoins = [...coins]
@@ -57,7 +56,7 @@ export default function Home() {
   return (
     <div>
       {/* Hero: full width, calm. */}
-      <section className="mb-8 md:mb-10 grid gap-6 lg:grid-cols-[1fr_320px] items-end">
+      <section className="mb-8 md:mb-10 grid gap-6 lg:grid-cols-[1fr_460px] items-center">
         <div>
           <h1 className="text-[40px] md:text-[60px] leading-[0.96] max-w-[13ch]">Every trader is a main character.</h1>
           <p className="text-text-secondary mt-4 text-[16px] md:text-[18px] max-w-[54ch] leading-relaxed">
@@ -76,23 +75,7 @@ export default function Home() {
           </div>
         </div>
 
-        {top && (
-          <Link to={`/kol/${top.handle}`} className="block">
-            <Panel strong className="p-4 overflow-hidden hover:brightness-110 transition-all">
-              <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(260px 160px at 85% 15%, hsl(${topHue} 85% 60% / .28), transparent 70%)` }} />
-              <div className="relative text-[12px] font-bold text-warning">Top trader right now</div>
-              <div className="relative mt-3 flex items-center gap-3">
-                <Avatar name={top.name} hue={topHue} src={top.avatar} large size={64} glow />
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 font-bold text-[18px] leading-tight"><span className="truncate">{top.name}</span>{isEndorsedRef(coins, top.handle) && <Verified />}</div>
-                  <div className="text-text-secondary text-[13px] truncate">@{top.handle}, {fmtCount(top.followers)} followers</div>
-                  <Pnl value={pnlFor(top, win)} className="text-[18px] mt-0.5" />
-                </div>
-              </div>
-              <div className="relative mt-3 text-[13px] text-text-secondary">{coinsFor(coins, top.handle).length ? `${coinsFor(coins, top.handle).length} coin on MAIN` : 'No coin yet, launch the first'}</div>
-            </Panel>
-          </Link>
-        )}
+        <MainTokenCard />
       </section>
 
       {/* Board + live column, aligned at the header row. */}

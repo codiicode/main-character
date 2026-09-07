@@ -37,6 +37,7 @@ export default function App() {
           <nav className="flex items-center gap-0.5 text-[15px]">
             {[
               ['/', 'Leaderboard'],
+              ['/tokens', 'Tokens'],
               ['/kols', 'KOLs'],
               ['/launch', 'Launch'],
               ['/how-it-works', 'How it works'],
