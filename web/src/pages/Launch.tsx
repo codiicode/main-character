@@ -61,7 +61,9 @@ export default function Launch() {
 
   const kol: Kol | undefined = kols.find((k) => k.handle.toLowerCase() === sel?.toLowerCase())
   const clanSel = clans.find((c) => c.name === clan)
-  const targetReady = mode === 'KOL' ? !!kol?.wallets.evm : !!clanSel && clanSel.funded.length > 0
+  // A KOL without a resolved wallet can still be launched for: the splitter holds their share until MAIN sets the address.
+  const targetReady = mode === 'KOL' ? !!kol : !!clanSel && clanSel.funded.length > 0
+  const pendingWallet = mode === 'KOL' && !!kol && !kol.wallets.evm
   const canLaunch = targetReady && name.trim().length > 1 && symbol.trim().length > 1 && !!MAIN_LAUNCHER_ADDRESS
 
   useEffect(() => {
@@ -92,7 +94,7 @@ export default function Launch() {
         publicClient.readContract({ address: PONS_FACTORY_ADDRESS, abi: ponsFactoryAbi, functionName: 'launchFee' }),
         publicClient.readContract({ address: PONS_FACTORY_ADDRESS, abi: ponsFactoryAbi, functionName: 'previewLaunchEconomics', args: [0n, '0x0000000000000000000000000000000000000000'] }),
       ])
-      const kolAccounts = mode === 'KOL' ? [kol!.wallets.evm as `0x${string}`] : clanSel!.funded.map((m) => m.wallets.evm as `0x${string}`)
+      const kolAccounts = mode === 'KOL' ? [(kol!.wallets.evm || '0x0000000000000000000000000000000000000000') as `0x${string}`] : clanSel!.funded.map((m) => m.wallets.evm as `0x${string}`)
       const kolWeights = kolAccounts.map(() => 1n)
       const logo = logoUrl.trim() || (mode === 'KOL' ? largeAvatar(kol!.avatar) ?? '' : '')
       const input = toLaunchInput({
@@ -202,7 +204,7 @@ export default function Launch() {
                 <Avatar name={kol.name} hue={hueFor(kol.handle)} src={kol.avatar} size={40} />
                 <div className="flex-1 min-w-0">
                   <div className="font-bold truncate">Paired with {kol.name} <span className="text-text-secondary font-medium">@{kol.handle}</span></div>
-                  <div className="text-[13px] mt-1">{kol.wallets.evm ? <Tag tone="green">{shortAddr(kol.wallets.evm)} on Robinhood Chain</Tag> : <Tag tone="yellow">Resolving wallet, launch locked</Tag>}</div>
+                  <div className="text-[13px] mt-1">{kol.wallets.evm ? <Tag tone="green">{shortAddr(kol.wallets.evm)} on Robinhood Chain</Tag> : <Tag tone="yellow">No wallet on FOMO yet, fees will be held for them</Tag>}</div>
                 </div>
               </div>
             )}
@@ -262,6 +264,7 @@ export default function Launch() {
               </div>
             </div>
 
+            {pendingWallet && <div className="mt-4 well rounded-2xl p-3 text-[13px] text-warning">FOMO hasn't given @{kol!.handle} an EVM wallet yet. You can launch anyway: their 1% is held in the coin's fee splitter and released to their wallet as soon as FOMO creates one.</div>}
             {!MAIN_LAUNCHER_ADDRESS && <div className="mt-4 well rounded-2xl p-3 text-[13px] text-warning">Launch contract isn't deployed yet. Everything else works; this button goes live after deployment.</div>}
 
             <div className="mt-4">
@@ -273,7 +276,7 @@ export default function Launch() {
                 </Button>
               )}
               {isConnected && !canLaunch && tx.step === 'idle' && (
-                <p className="text-text-tertiary text-[12px] text-center mt-2">{mode === 'KOL' ? (!kol ? 'Pick a KOL to continue' : !kol.wallets.evm ? "This KOL's wallet is still resolving" : 'Add a name and ticker') : (!clanSel ? 'Pick a clan to continue' : clanSel.funded.length === 0 ? 'No member of this clan has a wallet yet' : 'Add a name and ticker')}</p>
+                <p className="text-text-tertiary text-[12px] text-center mt-2">{mode === 'KOL' ? (!kol ? 'Pick a KOL to continue' : 'Add a name and ticker') : (!clanSel ? 'Pick a clan to continue' : clanSel.funded.length === 0 ? 'No member of this clan has a wallet yet' : 'Add a name and ticker')}</p>
               )}
               {tx.step === 'mining' && <p className="text-text-secondary text-[13px] text-center mt-2">Waiting for Robinhood Chain. <a className="underline" href={explorerTx(tx.hash)} target="_blank" rel="noreferrer">View transaction</a></p>}
               {tx.step === 'done' && <p className="text-green text-[13px] text-center mt-2">Live. Taking you to the coin page.</p>}
