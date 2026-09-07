@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { normalizeHandle, resolveHandle } from './functions/_lib/fomo'
+import { normalizeHandle, resolveHandle } from './functions/_lib/fomo.js'
 
 /** Dev-only stand-in for the Cloudflare Pages Function at /api/resolve. Reads FOMOAPI_KEY from ../.env. */
 function devApi(): Plugin {
