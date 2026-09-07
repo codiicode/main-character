@@ -5,8 +5,7 @@ import { Button } from './components/ui'
 function Logo() {
   return (
     <Link to="/" className="flex items-center gap-2.5 select-none" aria-label="MAIN home">
-      <img src="/brand/logo.png" alt="" width={34} height={34} className="w-[34px] h-auto drop-shadow-[0_4px_14px_rgba(255,255,255,.28)]" />
-      <span className="text-[22px] font-bold tracking-tight lowercase">main</span>
+      <img src="/brand/logo.png" alt="MAIN" width={40} height={26} className="w-[40px] h-auto drop-shadow-[0_4px_14px_rgba(255,255,255,.28)]" />
     </Link>
   )
 }
