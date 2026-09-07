@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronRight, Rocket, ArrowRight } from 'lucide-react'
-import { coins, coinsFor, isEndorsed, fmtUsd } from '../data/mock'
+import { ChevronRight, Rocket, ArrowRight, Crown } from 'lucide-react'
+import { coins, coinsFor, isEndorsed, fmtUsd, fmtCount } from '../data/mock'
 import { useKols, pnlFor, hueFor, type Window } from '../data/kols'
-import { Avatar, Button, Pnl, Change, Segment, Tag, Verified, Pill, Panel } from '../components/ui'
+import { Avatar, AvatarStack, Button, Pnl, Change, Segment, Tag, Verified, Pill, Panel } from '../components/ui'
 
 function Medal({ rank }: { rank: number }) {
   if (rank > 3) return <span className="w-7 text-center text-text-secondary tabular text-[14px] font-semibold">{rank}</span>
@@ -43,26 +43,49 @@ export default function Home() {
   const shown = ranked.filter((k) => (filter === 'All' ? true : filter === 'Endorsed' ? isEndorsed(k.handle) : !isEndorsed(k.handle)))
   const trending = [...coins].sort((a, b) => b.vol24h - a.vol24h)
   const byHandle = (h: string) => kols.find((k) => k.handle.toLowerCase() === h.toLowerCase())
-  const totalFees = coins.reduce((s, c) => s + c.feesEth, 0)
+  const top = ranked[0]
+  const topHue = top ? hueFor(top.handle) : 220
+  const withPhoto = kols.filter((k) => k.avatar)
+  const syncedAgo = syncedAt ? Math.max(1, Math.round((Date.now() - new Date(syncedAt).getTime()) / 60000)) : null
 
   return (
     <div className="grid gap-6 md:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px]">
       <section className="min-w-0">
         {/* Hero */}
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-[40px] md:text-[56px] leading-[0.98] max-w-[12ch]">Every trader is a main character.</h1>
-          <p className="text-text-secondary mt-3 text-[16px] md:text-[17px] max-w-[52ch] leading-relaxed">
-            Launch a coin for any KOL on FOMO. Trading fees land in their wallet from the first trade. When they endorse it, their share doubles.
-          </p>
-          <div className="mt-5 flex flex-wrap items-center gap-2.5">
-            <Button variant="primary" size="lg" to="/launch"><Rocket size={18} /> Launch a coin</Button>
-            <Button variant="glass" size="lg" to="/how-it-works">How it works <ArrowRight size={16} /></Button>
+        <div className="mb-6 md:mb-8 grid gap-5 lg:grid-cols-[1fr_300px] items-end">
+          <div>
+            <h1 className="text-[40px] md:text-[56px] leading-[0.98] max-w-[12ch]">Every trader is a main character.</h1>
+            <p className="text-text-secondary mt-3 text-[16px] md:text-[17px] max-w-[52ch] leading-relaxed">
+              Launch a coin for any KOL on FOMO. Trading fees land in their wallet from the first trade. When they endorse it, their share doubles.
+            </p>
+            <div className="mt-5 flex flex-wrap items-center gap-2.5">
+              <Button variant="primary" size="lg" to="/launch"><Rocket size={18} /> Launch a coin</Button>
+              <Button variant="glass" size="lg" to="/how-it-works">How it works <ArrowRight size={16} /></Button>
+            </div>
+            <div className="mt-5 flex items-center gap-3">
+              <AvatarStack items={withPhoto.slice(0, 7).map((k) => ({ name: k.name, hue: hueFor(k.handle), src: k.avatar }))} size={30} max={7} />
+              <span className="text-[14px] text-text-secondary"><b className="text-text-primary tabular">{kols.length || '—'}</b> FOMO traders ready to be launched</span>
+            </div>
           </div>
-          <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-[14px] text-text-secondary">
-            <span><b className="text-text-primary tabular">{kols.length || '—'}</b> FOMO traders</span>
-            <span><b className="text-text-primary tabular">{coins.length}</b> live coins</span>
-            <span><b className="text-green tabular">+{totalFees.toFixed(2)} ETH</b> paid to KOLs</span>
-          </div>
+
+          {/* Featured: today's #1 */}
+          {top && (
+            <Link to={`/kol/${top.handle}`} className="block">
+              <Panel strong className="p-4 overflow-hidden hover:brightness-110 transition-all">
+                <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(260px 160px at 85% 15%, hsl(${topHue} 85% 60% / .28), transparent 70%)` }} />
+                <div className="relative flex items-center gap-2 text-[12px] font-bold text-warning"><Crown size={14} /> Top trader right now</div>
+                <div className="relative mt-3 flex items-center gap-3">
+                  <Avatar name={top.name} hue={topHue} src={top.avatar} large size={64} glow />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 font-bold text-[18px] leading-tight"><span className="truncate">{top.name}</span>{isEndorsed(top.handle) && <Verified />}</div>
+                    <div className="text-text-secondary text-[13px] truncate">@{top.handle}, {fmtCount(top.followers)} followers</div>
+                    <Pnl value={pnlFor(top, win)} className="text-[18px] mt-0.5" />
+                  </div>
+                </div>
+                <div className="relative mt-3 text-[13px] text-text-secondary">{coinsFor(top.handle).length ? `${coinsFor(top.handle).length} coin on MAIN` : 'No coin yet, launch the first'}</div>
+              </Panel>
+            </Link>
+          )}
         </div>
 
         {/* Filters */}
@@ -94,7 +117,7 @@ export default function Home() {
               >
                 <Medal rank={rank} />
                 <div className="flex items-center gap-2.5 md:gap-3 min-w-0">
-                  <Avatar name={k.name} hue={hueFor(k.handle)} src={k.avatar} size={44} />
+                  <Avatar name={k.name} hue={hueFor(k.handle)} src={k.avatar} size={46} />
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 font-bold text-[16px] leading-tight">
                       <span className="truncate">{k.name}</span> {endorsed && <Verified />}
@@ -112,13 +135,9 @@ export default function Home() {
                 <div className="text-right shrink-0">
                   <Pnl value={pnlFor(k, win)} className="md:hidden text-[16px]" compact />
                   <Pnl value={pnlFor(k, win)} className="hidden md:inline text-base" />
-                  <div className="md:hidden flex justify-end -space-x-1.5 mt-1 h-5">
-                    {myCoins.slice(0, 3).map((c) => <Avatar key={c.address} name={c.symbol} hue={c.hue} size={20} className="ring-2 ring-[#12111a]" />)}
-                  </div>
                 </div>
-                <div className="hidden md:flex justify-end -space-x-1.5">
-                  {myCoins.slice(0, 4).map((c) => <Avatar key={c.address} name={c.symbol} hue={c.hue} size={24} className="ring-2 ring-[#12111a]" />)}
-                  {myCoins.length === 0 && <Tag tone="primary">Open</Tag>}
+                <div className="hidden md:flex justify-end">
+                  {myCoins.length > 0 ? <Tag tone="green">{myCoins.length}</Tag> : <Tag tone="primary">Open</Tag>}
                 </div>
                 <div className="hidden md:block text-right text-green font-bold tabular">{fees > 0 ? `+${fees.toFixed(2)} ETH` : <span className="text-text-tertiary">—</span>}</div>
               </Link>
@@ -130,14 +149,14 @@ export default function Home() {
             </button>
           )}
         </Panel>
-        {syncedAt && <p className="text-text-tertiary text-[12px] mt-2 px-1">FOMO leaderboard, synced {new Date(syncedAt).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}</p>}
+        {syncedAgo && <p className="text-text-tertiary text-[12px] mt-2 px-1">FOMO leaderboard, updated {syncedAgo < 60 ? `${syncedAgo} min` : `${Math.round(syncedAgo / 60)} h`} ago</p>}
       </section>
 
       {/* Right: live coins */}
       <aside className="min-w-0">
         <div className="md:sticky md:top-[96px]">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[20px]">Live coins</h2>
+            <h2 className="text-[20px] flex items-center gap-2">Live coins <Tag tone="yellow">Demo</Tag></h2>
             <Segment options={['Trending', 'New', 'Graduated']} value="Trending" onChange={() => {}} />
           </div>
           <Panel className="overflow-hidden">
@@ -145,10 +164,7 @@ export default function Home() {
               const k = byHandle(c.kol)
               return (
                 <Link key={c.address} to={`/coin/${c.address}`} className={`row-hover flex items-center gap-3 px-4 h-[70px] ${i ? 'hair' : ''}`}>
-                  <div className="relative">
-                    <Avatar name={c.symbol} hue={c.hue} size={44} />
-                    <span className="absolute -bottom-1 -right-1 rounded-full ring-2 ring-[#12111a]"><Avatar name={k?.name ?? c.kol} hue={hueFor(c.kol)} src={k?.avatar} size={18} /></span>
-                  </div>
+                  <Avatar name={c.symbol} hue={hueFor(c.kol)} src={k?.avatar} size={46} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 font-bold text-[16px] leading-tight">
                       <span className="truncate">{c.symbol}</span>
@@ -165,7 +181,7 @@ export default function Home() {
               )
             })}
           </Panel>
-          <p className="text-text-secondary text-[13px] mt-3 px-1">0.0005 ETH + gas to launch. Coins trade on Pons V2 and show up in the FOMO app instantly.</p>
+          <p className="text-text-secondary text-[13px] mt-3 px-1">Coin data is a demo until the first real launch. 0.0005 ETH + gas to launch, trades on Pons V2, listed in FOMO instantly.</p>
         </div>
       </aside>
     </div>

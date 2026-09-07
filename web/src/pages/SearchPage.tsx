@@ -59,7 +59,7 @@ export default function SearchPage() {
           <Panel className="overflow-hidden">
             {coinHits.map((c, i) => (
               <Link key={c.address} to={`/coin/${c.address}`} className={`row-hover flex items-center gap-3 px-4 h-16 ${i ? 'hair' : ''}`}>
-                <Avatar name={c.symbol} hue={c.hue} size={40} />
+                <Avatar name={c.symbol} hue={hueFor(c.kol)} src={kols.find((k) => k.handle.toLowerCase() === c.kol.toLowerCase())?.avatar} size={40} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 font-bold"><span>{c.symbol}</span>{c.endorsed && <Verified />}{c.graduated && <Tag tone="green">Graduated</Tag>}</div>
                   <div className="text-[13px] text-text-secondary truncate">{fmtUsd(c.mcap, { compact: true })} mcap for @{c.kol}</div>

@@ -24,7 +24,7 @@ export default function Kol() {
         <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(700px 240px at 15% 0%, hsl(${hue} 80% 60% / .22), transparent 70%)` }} />
         <div className="relative flex items-start justify-between gap-3">
           <div className="flex items-center gap-4 min-w-0">
-            <Avatar name={k.name} hue={hue} src={k.avatar} size={72} />
+            <Avatar name={k.name} hue={hue} src={k.avatar} large size={88} glow />
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-[24px] md:text-[30px] font-bold leading-tight"><span className="truncate">{k.name}</span> {endorsed && <Verified className="scale-125" />}</div>
               <div className="text-text-secondary text-[15px] truncate">@{k.handle}{k.clan ? ` in ${k.clan}` : ''}{rank24 ? `, #${rank24} today` : ''}</div>
@@ -70,7 +70,7 @@ export default function Kol() {
           <Panel className="overflow-hidden">
             {my.map((c, i) => (
               <Link key={c.address} to={`/coin/${c.address}`} className={`row-hover flex items-center gap-3 px-4 h-[72px] ${i ? 'hair' : ''}`}>
-                <Avatar name={c.symbol} hue={c.hue} size={44} />
+                <Avatar name={c.symbol} hue={hue} src={k.avatar} size={44} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 font-bold"><span>{c.symbol}</span><span className="text-text-secondary font-medium truncate">{c.name}</span>{c.endorsed && <Tag tone="primary">Endorsed</Tag>}</div>
                   <div className="text-text-secondary text-[14px]">{fmtUsd(c.mcap, { compact: true })} mcap, {c.holders} holders, {c.createdAt} ago</div>

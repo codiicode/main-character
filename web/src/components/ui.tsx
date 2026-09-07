@@ -1,27 +1,41 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { BadgeCheck } from 'lucide-react'
+import { BadgeCheck, User } from 'lucide-react'
 
-export function Avatar({ name, hue, src, size = 40, className = '' }: { name: string; hue: number; src?: string | null; size?: number; className?: string }) {
+/** FOMO serves `_small` thumbnails; drop the suffix for the full-size file. */
+export const largeAvatar = (src?: string | null) => (src ? src.replace('_small.', '.') : src)
+
+export function Avatar({ name, hue, src, size = 40, className = '', large = false, glow = false }: { name: string; hue: number; src?: string | null; size?: number; className?: string; large?: boolean; glow?: boolean }) {
   const [broken, setBroken] = useState(false)
-  const initials = name.replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase()
-  const showImg = !!src && !broken
+  const url = large ? largeAvatar(src) : src
+  const showImg = !!url && !broken
   return (
     <div
-      className={`shrink-0 rounded-full grid place-items-center font-bold text-text-primary overflow-hidden ${className}`}
+      className={`shrink-0 rounded-full grid place-items-center overflow-hidden ${className}`}
+      aria-label={name}
       style={{
         width: size,
         height: size,
-        fontSize: size * 0.36,
-        background: `linear-gradient(135deg, hsl(${hue} 70% 55%), hsl(${(hue + 50) % 360} 60% 30%))`,
-        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.14), inset 0 1px 0 rgba(255,255,255,.25), 0 4px 12px -4px rgba(0,0,0,.6)',
+        background: showImg ? '#12111a' : `linear-gradient(160deg, rgba(255,255,255,.14), rgba(255,255,255,.04)), hsl(${hue} 30% 18%)`,
+        boxShadow: `inset 0 0 0 1px rgba(255,255,255,.16), inset 0 1px 0 rgba(255,255,255,.28), 0 6px 16px -6px rgba(0,0,0,.7)${glow ? `, 0 0 ${size * 0.6}px -${size * 0.15}px hsl(${hue} 80% 60% / .55)` : ''}`,
       }}
     >
       {showImg ? (
-        <img src={src!} alt="" width={size} height={size} loading="lazy" className="w-full h-full object-cover" onError={() => setBroken(true)} />
+        <img src={url!} alt="" width={size} height={size} loading={large ? "eager" : "lazy"} decoding="async" className="w-full h-full object-cover" onError={() => setBroken(true)} />
       ) : (
-        initials
+        <User size={size * 0.5} strokeWidth={1.75} className="text-text-secondary" />
       )}
+    </div>
+  )
+}
+
+/** Overlapping row of avatars. */
+export function AvatarStack({ items, size = 32, max = 6 }: { items: { name: string; hue: number; src?: string | null }[]; size?: number; max?: number }) {
+  return (
+    <div className="flex -space-x-2.5">
+      {items.slice(0, max).map((a, i) => (
+        <Avatar key={i} name={a.name} hue={a.hue} src={a.src} size={size} className="ring-2 ring-[#0b0a16]" />
+      ))}
     </div>
   )
 }

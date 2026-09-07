@@ -58,7 +58,7 @@ export default function Coin() {
           <Panel strong className="p-4 md:p-5">
             {/* Header */}
             <div className="flex items-center gap-3 flex-wrap">
-              <Avatar name={c.symbol} hue={c.hue} size={56} />
+              <Avatar name={c.symbol} hue={kHue} src={k?.avatar} large size={64} glow />
               <div className="min-w-0">
                 <div className="flex items-center gap-2 text-[26px] font-bold leading-tight">
                   {c.symbol}
