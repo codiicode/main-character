@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronRight, Rocket, ArrowRight, Crown } from 'lucide-react'
 import { coins, coinsFor, isEndorsed, fmtUsd, fmtCount } from '../data/mock'
 import { useKols, pnlFor, hueFor, type Window } from '../data/kols'
 import { Avatar, AvatarStack, Button, Pnl, Change, Segment, Tag, Verified, Pill, Panel } from '../components/ui'
@@ -59,8 +58,8 @@ export default function Home() {
               Launch a coin for any KOL on FOMO. Trading fees land in their wallet from the first trade. When they endorse it, their share doubles.
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
-              <Button variant="primary" size="lg" to="/launch"><Rocket size={18} /> Launch a coin</Button>
-              <Button variant="glass" size="lg" to="/how-it-works">How it works <ArrowRight size={16} /></Button>
+              <Button variant="primary" size="lg" to="/launch">Launch a coin</Button>
+              <Button variant="glass" size="lg" to="/how-it-works">How it works</Button>
             </div>
             <div className="mt-5 flex items-center gap-3">
               <AvatarStack items={withPhoto.slice(0, 7).map((k) => ({ name: k.name, hue: hueFor(k.handle), src: k.avatar }))} size={30} max={7} />
@@ -73,7 +72,7 @@ export default function Home() {
             <Link to={`/kol/${top.handle}`} className="block">
               <Panel strong className="p-4 overflow-hidden hover:brightness-110 transition-all">
                 <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(260px 160px at 85% 15%, hsl(${topHue} 85% 60% / .28), transparent 70%)` }} />
-                <div className="relative flex items-center gap-2 text-[12px] font-bold text-warning"><Crown size={14} /> Top trader right now</div>
+                <div className="relative flex items-center gap-2 text-[12px] font-bold text-warning">Top trader right now</div>
                 <div className="relative mt-3 flex items-center gap-3">
                   <Avatar name={top.name} hue={topHue} src={top.avatar} large size={64} glow />
                   <div className="min-w-0">
@@ -145,7 +144,7 @@ export default function Home() {
           })}
           {!loading && shown.length > limit && (
             <button onClick={() => setLimit((l) => l + 50)} className="hair w-full h-12 text-text-secondary hover:text-text-primary text-[15px] font-semibold flex items-center justify-center gap-1 row-hover">
-              Show {Math.min(50, shown.length - limit)} more <ChevronRight size={16} />
+              Show {Math.min(50, shown.length - limit)} more
             </button>
           )}
         </Panel>

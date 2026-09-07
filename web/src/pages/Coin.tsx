@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, ExternalLink, Copy, Check, Globe, Star } from 'lucide-react'
+import { ArrowLeft, Copy, Check, Globe, Star } from 'lucide-react'
 import { coins, fmtUsd, fmtPrice } from '../data/mock'
 import { useKols, hueFor } from '../data/kols'
 import { Avatar, Button, Change, Tag, Verified, Panel, IconButton, Empty } from '../components/ui'
@@ -131,8 +131,8 @@ export default function Coin() {
               {['$10', '$100', '$500', '$1000'].map((a) => <button key={a} className="h-9 rounded-xl glass text-[14px] font-bold">{a}</button>)}
             </div>
             <div className="mt-3 grid gap-2">
-              <Button variant="green" size="lg" className="w-full" href={`https://fomo.family/tokens/robinhood/${c.address}`}>Buy on FOMO <ExternalLink size={16} /></Button>
-              <Button variant="glass" size="md" className="w-full" href={`https://www.ponsfamily.com/launchpad`}>Trade on Pons <ExternalLink size={16} /></Button>
+              <Button variant="green" size="lg" className="w-full" href={`https://fomo.family/tokens/robinhood/${c.address}`}>Buy on FOMO</Button>
+              <Button variant="glass" size="md" className="w-full" href={`https://www.ponsfamily.com/launchpad`}>Trade on Pons</Button>
             </div>
             <p className="text-text-secondary text-[12px] mt-3 leading-relaxed">Trading inside MAIN is coming. FOMO already lists every MAIN coin on Robinhood Chain, and fees reach @{c.kol} wherever the trade happens.</p>
           </Panel>

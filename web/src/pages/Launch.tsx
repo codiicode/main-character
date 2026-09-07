@@ -1,28 +1,47 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Search, ShieldCheck, Clock, ImagePlus, Rocket, Info } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { isEndorsed } from '../data/mock'
-import { useKols, hueFor, shortAddr } from '../data/kols'
+import { useAllKols, resolveKol, hueFor, shortAddr, type Kol } from '../data/kols'
 import { Avatar, Button, Pnl, Tag, Verified, Panel } from '../components/ui'
 
 const field = 'well w-full h-12 rounded-xl focus:border-primary/60 outline-none px-4 text-[16px] placeholder:text-text-tertiary transition-colors'
 
 export default function Launch() {
   const [params] = useSearchParams()
-  const { kols, loading } = useKols()
+  const { kols, loading } = useAllKols()
   const [q, setQ] = useState('')
   const [sel, setSel] = useState<string | null>(params.get('kol'))
+  const [lookup, setLookup] = useState<{ state: 'idle' | 'busy' | 'none' | 'error'; msg?: string; candidates?: string[] }>({ state: 'idle' })
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
   const [desc, setDesc] = useState('')
   const [devBuy, setDevBuy] = useState('0')
+
   const list = useMemo(() => {
-    const s = q.trim().toLowerCase()
+    const s = q.trim().replace(/^@/, '').toLowerCase()
     const base = s ? kols.filter((k) => (k.handle + ' ' + k.name).toLowerCase().includes(s)) : kols
     return base.slice(0, 60)
   }, [q, kols])
-  const kol = kols.find((k) => k.handle.toLowerCase() === sel?.toLowerCase())
+  const kol: Kol | undefined = kols.find((k) => k.handle.toLowerCase() === sel?.toLowerCase())
   const canLaunch = !!kol && !!kol.wallets.evm && name.length > 1 && symbol.length > 1
+
+  // Deep link to a handle that isn't in the snapshot: look it up once.
+  useEffect(() => {
+    const h = params.get('kol')
+    if (h && !loading && !kols.some((k) => k.handle.toLowerCase() === h.toLowerCase())) void doLookup(h)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading])
+
+  async function doLookup(handle: string) {
+    setLookup({ state: 'busy' })
+    const r = await resolveKol(handle)
+    if (r.kol) { setSel(r.kol.handle); setQ(''); setLookup({ state: 'idle' }) }
+    else if (r.error) setLookup({ state: 'error', msg: r.error })
+    else setLookup({ state: 'none', candidates: r.candidates })
+  }
+
+  const typed = q.trim().replace(/^@/, '')
 
   return (
     <div className="max-w-[1080px] mx-auto">
@@ -34,12 +53,15 @@ export default function Launch() {
         <Panel className="p-4">
           <div className="flex items-center justify-between mb-3">
             <span className="font-bold text-[16px]">Choose a KOL</span>
-            <span className="text-[12px] text-text-secondary">{kols.length} on FOMO</span>
+            <span className="text-[12px] text-text-secondary">Any FOMO trader</span>
           </div>
-          <div className="well h-11 rounded-xl flex items-center gap-2 px-3">
+          <form
+            className="well h-11 rounded-xl flex items-center gap-2 px-3"
+            onSubmit={(e) => { e.preventDefault(); if (typed && list.length === 0) void doLookup(typed) }}
+          >
             <Search size={16} className="text-text-secondary" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search FOMO handle" className="flex-1 bg-transparent outline-none text-[15px] placeholder:text-text-tertiary" />
-          </div>
+            <input value={q} onChange={(e) => { setQ(e.target.value); setLookup({ state: 'idle' }) }} placeholder="Type any FOMO handle" className="flex-1 bg-transparent outline-none text-[15px] placeholder:text-text-tertiary" />
+          </form>
           <div className="mt-2 max-h-[440px] overflow-y-auto scrollbar-none -mx-1 px-1">
             {loading && <div className="p-4 text-text-secondary text-[14px]">Loading traders</div>}
             {list.map((k) => {
@@ -59,10 +81,26 @@ export default function Launch() {
                 </button>
               )
             })}
-            {!loading && q && list.length === 0 && (
+            {!loading && typed && list.length === 0 && (
               <div className="p-4 text-center text-[14px] text-text-secondary">
-                @{q.trim()} isn't on the list yet. <button className="text-[#aab5ff] font-bold">Request them</button>
-                <div className="text-[12px] mt-1 text-text-tertiary">We resolve their FOMO wallet first, then launch unlocks.</div>
+                {lookup.state === 'busy' && <div>Looking up @{typed} on FOMO</div>}
+                {lookup.state === 'idle' && (
+                  <>
+                    <div>@{typed} isn't on the leaderboard.</div>
+                    <Button size="sm" variant="glass" className="mt-3" onClick={() => doLookup(typed)}>Look up @{typed} on FOMO</Button>
+                  </>
+                )}
+                {lookup.state === 'none' && (
+                  <>
+                    <div>No FOMO trader called @{typed}.</div>
+                    {lookup.candidates && lookup.candidates.length > 0 && (
+                      <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                        {lookup.candidates.map((c) => <button key={c} onClick={() => doLookup(c)} className="glass rounded-full px-3 h-8 text-[13px] font-semibold">@{c}</button>)}
+                      </div>
+                    )}
+                  </>
+                )}
+                {lookup.state === 'error' && <div className="text-red">{lookup.msg}</div>}
               </div>
             )}
           </div>
@@ -76,7 +114,7 @@ export default function Launch() {
                 <Avatar name={kol.name} hue={hueFor(kol.handle)} src={kol.avatar} size={40} />
                 <div className="flex-1 min-w-0">
                   <div className="font-bold truncate">Paired with {kol.name} <span className="text-text-secondary font-medium">@{kol.handle}</span></div>
-                  <div className="text-[13px] mt-1">{kol.wallets.evm ? <Tag tone="green"><ShieldCheck size={12} /> {shortAddr(kol.wallets.evm)} on Robinhood Chain</Tag> : <Tag tone="yellow"><Clock size={12} /> Resolving wallet, launch locked</Tag>}</div>
+                  <div className="text-[13px] mt-1">{kol.wallets.evm ? <Tag tone="green">{shortAddr(kol.wallets.evm)} on Robinhood Chain</Tag> : <Tag tone="yellow">Resolving wallet, launch locked</Tag>}</div>
                 </div>
               </div>
             )}
@@ -86,7 +124,7 @@ export default function Launch() {
             </div>
             <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Description (optional)" rows={3} className={`${field} h-auto py-3 mt-3 resize-none`} />
             <div className="mt-3 grid sm:grid-cols-2 gap-3">
-              <button className="h-28 rounded-2xl border border-dashed border-white/15 hover:border-primary/60 hover:bg-white/3 text-text-secondary flex flex-col items-center justify-center gap-1.5 text-[14px] transition-colors"><ImagePlus size={22} /> Add an image</button>
+              <button className="h-28 rounded-2xl border border-dashed border-white/15 hover:border-primary/60 hover:bg-white/3 text-text-secondary flex items-center justify-center text-[14px] transition-colors">Add an image</button>
               <div className="grid gap-3">
                 <input placeholder="X link (optional)" className={field} />
                 <input placeholder="Website (optional)" className={field} />
@@ -104,7 +142,7 @@ export default function Launch() {
                   <div><span className="text-green font-bold text-[15px]">1%</span><br />to the KOL</div>
                   <div><span className="text-warning font-bold text-[15px]">0.5%</span><br />to you</div>
                 </div>
-                <div className="text-[12px] text-text-tertiary mt-2.5 flex items-start gap-1"><Info size={12} className="mt-0.5 shrink-0" /> When the KOL endorses, their share doubles to 2%. Your 0.5% never changes.</div>
+                <div className="text-[12px] text-text-tertiary mt-2.5">When the KOL endorses, their share doubles to 2%. Your 0.5% never changes.</div>
               </div>
               <div className="well rounded-2xl p-3.5">
                 <div className="text-[13px] text-text-secondary mb-2">Buy at launch (optional)</div>
@@ -115,7 +153,7 @@ export default function Launch() {
                 <div className="text-[12px] text-text-tertiary mt-2.5">Launch fee 0.0005 ETH plus gas. 1B supply, liquidity locked on Pons V2.</div>
               </div>
             </div>
-            <Button variant="primary" size="lg" className="w-full mt-4" disabled={!canLaunch}><Rocket size={18} /> Connect wallet and launch</Button>
+            <Button variant="primary" size="lg" className="w-full mt-4" disabled={!canLaunch}>Connect wallet and launch</Button>
             {!canLaunch && <p className="text-text-tertiary text-[12px] text-center mt-2">{!kol ? 'Pick a KOL to continue' : !kol.wallets.evm ? 'This KOL\'s wallet is still resolving' : 'Add a name and ticker'}</p>}
           </Panel>
         </section>

@@ -1,10 +1,10 @@
-import { Rocket, Coins, BadgeCheck, ArrowRight } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { Button, Panel } from '../components/ui'
 
 const steps = [
-  { icon: Rocket, title: 'Someone launches a coin for a KOL', body: 'Pick any trader on the FOMO leaderboard, name the coin, pay 0.0005 ETH plus gas. The coin goes live on Pons V2 and shows up in FOMO right away.' },
-  { icon: Coins, title: 'Fees flow to the KOL automatically', body: 'On every trade, 1% goes to the KOL\'s own FOMO wallet in ETH and 0.5% to whoever launched the coin. No claiming, no forms.' },
-  { icon: BadgeCheck, title: 'The KOL endorses and doubles their share', body: 'Log in with X on MAIN. The endorsed coin gets a badge and the KOL\'s share becomes 2% of every trade. The launcher keeps 0.5%.' },
+  { title: 'Someone launches a coin for a KOL', body: 'Pick any trader on the FOMO leaderboard, name the coin, pay 0.0005 ETH plus gas. The coin goes live on Pons V2 and shows up in FOMO right away.' },
+  { title: 'Fees flow to the KOL automatically', body: 'On every trade, 1% goes to the KOL\'s own FOMO wallet in ETH and 0.5% to whoever launched the coin. No claiming, no forms.' },
+  { title: 'The KOL endorses and doubles their share', body: 'Log in with X on MAIN. The endorsed coin gets a badge and the KOL\'s share becomes 2% of every trade. The launcher keeps 0.5%.' },
 ]
 
 const faq = [
@@ -23,9 +23,8 @@ export default function HowItWorks() {
       <p className="text-text-secondary mt-3 text-[16px] max-w-[56ch] leading-relaxed">MAIN pairs a memecoin with a real trader and routes the trading fees to them. Three steps, one wallet, nothing to claim.</p>
 
       <div className="mt-8 grid gap-3">
-        {steps.map(({ icon: Icon, title, body }, i) => (
-          <Panel key={title} strong={i === 1} className="p-5 md:p-6 flex gap-4">
-            <div className="glass w-11 h-11 rounded-2xl grid place-items-center shrink-0"><Icon size={20} /></div>
+        {steps.map(({ title, body }, i) => (
+          <Panel key={title} strong={i === 1} className="p-5 md:p-6">
             <div>
               <h2 className="text-[19px] md:text-[21px]">{title}</h2>
               <p className="text-text-secondary text-[15px] mt-1 max-w-[62ch] leading-relaxed">{body}</p>
@@ -61,14 +60,14 @@ export default function HowItWorks() {
       <Panel className="overflow-hidden">
         {faq.map(([q, a], i) => (
           <details key={q} className={`group ${i ? 'hair' : ''}`}>
-            <summary className="cursor-pointer list-none px-5 py-4 font-bold text-[16px] flex items-center justify-between gap-3 row-hover">{q}<ArrowRight size={16} className="text-text-secondary transition-transform group-open:rotate-90 shrink-0" /></summary>
+            <summary className="cursor-pointer list-none px-5 py-4 font-bold text-[16px] flex items-center justify-between gap-3 row-hover">{q}<ChevronDown size={16} className="text-text-secondary transition-transform group-open:rotate-180 shrink-0" /></summary>
             <p className="px-5 pb-4 -mt-1 text-text-secondary text-[15px] max-w-[64ch] leading-relaxed">{a}</p>
           </details>
         ))}
       </Panel>
 
       <div className="mt-8 flex flex-wrap gap-2.5">
-        <Button size="lg" to="/launch"><Rocket size={18} /> Launch a coin</Button>
+        <Button size="lg" to="/launch">Launch a coin</Button>
         <Button size="lg" variant="glass" to="/kols">Browse KOLs</Button>
       </div>
     </div>

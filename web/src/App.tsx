@@ -1,5 +1,5 @@
 import { Outlet, NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Search, Rocket, Users, Wallet } from 'lucide-react'
+import { Home, Search, Plus, Users, Wallet } from 'lucide-react'
 import { Button } from './components/ui'
 
 function Logo() {
@@ -16,7 +16,7 @@ export default function App() {
   const tabs = [
     { to: '/', icon: Home, label: 'Home' },
     { to: '/search', icon: Search, label: 'Search' },
-    { to: '/launch', icon: Rocket, label: 'Launch' },
+    { to: '/launch', icon: Plus, label: 'Launch' },
     { to: '/kols', icon: Users, label: 'KOLs' },
     { to: '/me', icon: Wallet, label: 'Me' },
   ]
@@ -60,7 +60,7 @@ export default function App() {
             <kbd className="text-[11px] px-1.5 h-5 rounded-md bg-white/8 text-text-secondary grid place-items-center font-mono">/</kbd>
           </button>
           <div className="flex items-center gap-2">
-            <Button variant="glass" size="sm" to="/launch"><Rocket size={16} /> Launch</Button>
+            <Button variant="glass" size="sm" to="/launch">Launch</Button>
             <Button variant="primary" size="sm" to="/me">Connect</Button>
           </div>
         </div>
