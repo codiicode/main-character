@@ -1,7 +1,8 @@
 /// <reference types="@cloudflare/workers-types" />
 // POST /api/free-launch
 // Launches a coin from MAIN's relayer wallet for someone who has no wallet. MAIN pays the Pons fee + gas.
-// Guards: Cloudflare Turnstile, per-IP / per-KOL / global daily caps in KV, relayer balance floor.
+// Guards: Cloudflare Turnstile, per-IP / per-KOL / global daily caps in KV (counted only on success),
+// relayer balance floor. Every failure returns JSON so the UI can show it.
 import { createPublicClient, createWalletClient, http, defineChain, decodeEventLog, parseAbi, formatEther, type Address, type Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { jsonResponse, normalizeHandle, resolveHandle, type Kol } from '../_lib/fomo.js'
@@ -56,17 +57,28 @@ type Body = {
 }
 
 const day = () => new Date().toISOString().slice(0, 10)
+const rlKey = (key: string) => `rl:${key}:${day()}`
 
-async function bump(kv: KVNamespace | undefined, key: string, limit: number): Promise<boolean> {
-  if (!kv) return true
-  const k = `rl:${key}:${day()}`
-  const n = Number((await kv.get(k)) ?? '0')
-  if (n >= limit) return false
-  await kv.put(k, String(n + 1), { expirationTtl: 2 * 86400 })
-  return true
+async function count(kv: KVNamespace | undefined, key: string): Promise<number> {
+  if (!kv) return 0
+  return Number((await kv.get(rlKey(key))) ?? '0')
+}
+async function bump(kv: KVNamespace | undefined, key: string): Promise<void> {
+  if (!kv) return
+  const n = await count(kv, key)
+  await kv.put(rlKey(key), String(n + 1), { expirationTtl: 2 * 86400 })
 }
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPost: PagesFunction<Env> = async (ctx) => {
+  try {
+    return await handle(ctx)
+  } catch (e) {
+    const msg = e instanceof Error ? `${e.name}: ${e.message.split('\n')[0]}` : String(e)
+    return jsonResponse({ error: `Launch failed: ${msg}` }, 500)
+  }
+}
+
+async function handle({ request, env }: Parameters<PagesFunction<Env>>[0]): Promise<Response> {
   const pk = env.RELAYER_PK || env.SIGNER_PK
   if (!pk || !env.MAIN_LAUNCHER || !env.FOMOAPI_KEY) return jsonResponse({ error: 'Free launches are not configured yet.' }, 503)
 
@@ -80,30 +92,31 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const mode = b.mode === 'CLAN' ? 'CLAN' : 'KOL'
 
   // 1. human check
+  const ip = request.headers.get('cf-connecting-ip') ?? 'unknown'
   if (env.TURNSTILE_SECRET) {
-    const ip = request.headers.get('cf-connecting-ip') ?? ''
     const form = new URLSearchParams({ secret: env.TURNSTILE_SECRET, response: b.turnstile ?? '', remoteip: ip })
     const v = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { method: 'POST', body: form })
     const j = (await v.json().catch(() => ({}))) as { success?: boolean }
     if (!j.success) return jsonResponse({ error: 'Human check failed. Reload and try again.' }, 403)
   }
 
-  // 2. caps
-  const ip = request.headers.get('cf-connecting-ip') ?? 'unknown'
+  // 2. caps, read-only here; counted after a successful launch
   const perDay = Number(env.FREE_LAUNCHES_PER_DAY ?? '25')
   const perIp = Number(env.FREE_LAUNCHES_PER_IP ?? '2')
-  if (!(await bump(env.MAIN_KV, 'free:global', perDay))) return jsonResponse({ error: "Today's free launches are used up. Connect a wallet to launch now, or come back tomorrow." }, 429)
-  if (!(await bump(env.MAIN_KV, `free:ip:${ip}`, perIp))) return jsonResponse({ error: 'You have used your free launches for today. Connect a wallet to launch more.' }, 429)
+  if ((await count(env.MAIN_KV, 'free:global')) >= perDay) return jsonResponse({ error: "Today's free launches are used up. Connect a wallet to launch now, or come back tomorrow." }, 429)
+  if ((await count(env.MAIN_KV, `free:ip:${ip}`)) >= perIp) return jsonResponse({ error: 'You have used your free launches for today. Connect a wallet to launch more.' }, 429)
 
   // 3. target
   let kolRef: string
   let kolAccounts: Address[]
   let logo = (b.logo ?? '').trim()
   let kolForDesc = ''
+  let targetKey: string
   if (mode === 'KOL') {
     const handle = normalizeHandle(b.handle)
     if (!handle) return jsonResponse({ error: 'Pick a FOMO trader.' }, 400)
-    if (!(await bump(env.MAIN_KV, `free:kol:${handle.toLowerCase()}`, 1))) return jsonResponse({ error: `@${handle} already got a free coin today. Connect a wallet to launch another.` }, 429)
+    targetKey = `free:kol:${handle.toLowerCase()}`
+    if ((await count(env.MAIN_KV, targetKey)) >= 1) return jsonResponse({ error: `@${handle} already got a free coin today. Connect a wallet to launch another.` }, 429)
     let kol: Kol | null = null
     const cached = env.MAIN_KV ? await env.MAIN_KV.get<{ kol: Kol | null }>(`kol:${handle.toLowerCase()}`, 'json') : null
     if (cached?.kol?.wallets.evm) kol = cached.kol
@@ -120,8 +133,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   } else {
     const clanName = (b.clan ?? '').trim()
     if (!clanName) return jsonResponse({ error: 'Pick a clan.' }, 400)
-    if (!(await bump(env.MAIN_KV, `free:clan:${clanName.toLowerCase()}`, 1))) return jsonResponse({ error: `The ${clanName} clan already got a free coin today.` }, 429)
-    // members come from the same snapshot the site uses
+    targetKey = `free:clan:${clanName.toLowerCase()}`
+    if ((await count(env.MAIN_KV, targetKey)) >= 1) return jsonResponse({ error: `The ${clanName} clan already got a free coin today.` }, 429)
     const snap = (await (await fetch(new URL('/data/kols.json', request.url).toString())).json()) as { kols: Kol[] }
     const members = snap.kols.filter((k) => k.clan?.toLowerCase() === clanName.toLowerCase() && k.wallets.evm)
     if (members.length === 0) return jsonResponse({ error: 'No member of that clan has a wallet yet.' }, 400)
@@ -164,23 +177,21 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
   const launcher = (payout || treasury) as Address
 
-  try {
-    const hash = await wallet.writeContract({ address: launcherAddr, abi: launcherAbi, functionName: 'launchFor', args: [input, launcher], value: fee })
-    const receipt = await pub.waitForTransactionReceipt({ hash })
-    if (receipt.status !== 'success') return jsonResponse({ error: 'The launch transaction reverted.' }, 502)
-    let token: Address | null = null
-    for (const l of receipt.logs) {
-      if (l.address.toLowerCase() !== launcherAddr.toLowerCase()) continue
-      try {
-        const ev = decodeEventLog({ abi: launcherAbi, data: l.data, topics: l.topics })
-        if (ev.eventName === 'CoinLaunched') token = (ev.args as { token: Address }).token
-      } catch {
-        /* other event */
-      }
+  const hash = await wallet.writeContract({ address: launcherAddr, abi: launcherAbi, functionName: 'launchFor', args: [input, launcher], value: fee })
+  const receipt = await pub.waitForTransactionReceipt({ hash })
+  if (receipt.status !== 'success') return jsonResponse({ error: 'The launch transaction reverted.', hash }, 502)
+  let token: Address | null = null
+  for (const l of receipt.logs) {
+    if (l.address.toLowerCase() !== launcherAddr.toLowerCase()) continue
+    try {
+      const ev = decodeEventLog({ abi: launcherAbi, data: l.data, topics: l.topics })
+      if (ev.eventName === 'CoinLaunched') token = (ev.args as { token: Address }).token
+    } catch {
+      /* other event */
     }
-    return jsonResponse({ ok: true, hash, token })
-  } catch (e) {
-    const msg = e instanceof Error ? e.message.split('\n')[0] : String(e)
-    return jsonResponse({ error: `Launch failed: ${msg}` }, 502)
   }
+
+  // 5. count it
+  await Promise.all([bump(env.MAIN_KV, 'free:global'), bump(env.MAIN_KV, `free:ip:${ip}`), bump(env.MAIN_KV, targetKey)])
+  return jsonResponse({ ok: true, hash, token })
 }
