@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { useAccount, usePublicClient, useWriteContract, useSwitchChain } from 'wagmi'
@@ -8,6 +8,7 @@ import { useAllKols, resolveKol, hueFor, shortAddr, type Kol } from '../data/kol
 import { Avatar, Button, Pnl, Tag, Verified, Panel } from '../components/ui'
 import { ConnectButton } from '../components/Connect'
 import { Turnstile } from '../components/Turnstile'
+import { resizeImage, uploadImage } from '../lib/image'
 import { MAIN_LAUNCHER_ADDRESS, PONS_FACTORY_ADDRESS, robinhoodChain, explorerTx } from '../lib/chain'
 import { launcherAbi, ponsFactoryAbi, toLaunchInput, randomSalt, devBuyToWei, parseCoinLaunched } from '../lib/launcher'
 import { largeAvatar } from '../components/ui'
@@ -38,7 +39,11 @@ export default function Launch() {
   const [desc, setDesc] = useState('')
   const [twitter, setTwitter] = useState('')
   const [website, setWebsite] = useState('')
-  const [logoUrl, setLogoUrl] = useState('')
+  const [logoBlob, setLogoBlob] = useState<Blob | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string>('')
+  const [logoErr, setLogoErr] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
+  const detailsRef = useRef<HTMLDivElement>(null)
   const [devBuy, setDevBuy] = useState('0')
   const [tx, setTx] = useState<TxState>({ step: 'idle' })
   // Free mode: MAIN's relayer pays the fee and gas; no wallet needed.
@@ -85,10 +90,35 @@ export default function Launch() {
     publicClient.readContract({ address: PONS_FACTORY_ADDRESS, abi: ponsFactoryAbi, functionName: 'launchFee' }).then(setLaunchFee).catch(() => {})
   }, [publicClient])
 
+  async function pickImage(file: File | undefined) {
+    if (!file) return
+    setLogoErr('')
+    try {
+      const blob = await resizeImage(file)
+      setLogoBlob(blob)
+      setLogoPreview(URL.createObjectURL(blob))
+    } catch (e) {
+      setLogoErr(e instanceof Error ? e.message : 'Could not read that image')
+    }
+  }
+  function resetImage() {
+    setLogoBlob(null)
+    setLogoPreview('')
+    if (fileRef.current) fileRef.current.value = ''
+  }
+  /** On phones the picker sits above the form; jump to the form once a target is chosen. */
+  function focusDetails() {
+    if (window.innerWidth < 768) setTimeout(() => detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+  }
+  async function resolvedLogo(fallback: string | null | undefined): Promise<string> {
+    if (logoBlob) return uploadImage(logoBlob)
+    return fallback ?? ''
+  }
+
   async function doLookup(handle: string) {
     setLookup({ state: 'busy' })
     const r = await resolveKol(handle)
-    if (r.kol) { setSel(r.kol.handle); setQ(''); setLookup({ state: 'idle' }) }
+    if (r.kol) { setSel(r.kol.handle); setQ(''); setLookup({ state: 'idle' }); focusDetails() }
     else if (r.error) setLookup({ state: 'error', msg: r.error })
     else setLookup({ state: 'none', candidates: r.candidates })
   }
@@ -104,7 +134,7 @@ export default function Launch() {
       ])
       const kolAccounts = mode === 'KOL' ? [(kol!.wallets.evm || '0x0000000000000000000000000000000000000000') as `0x${string}`] : clanSel!.funded.map((m) => m.wallets.evm as `0x${string}`)
       const kolWeights = kolAccounts.map(() => 1n)
-      const logo = logoUrl.trim() || (mode === 'KOL' ? largeAvatar(kol!.avatar) ?? '' : '')
+      const logo = await resolvedLogo(mode === 'KOL' ? largeAvatar(kol!.avatar) : '')
       const input = toLaunchInput({
         name: name.trim(),
         symbol: symbol.trim().toUpperCase(),
@@ -145,6 +175,7 @@ export default function Launch() {
   async function launchFree() {
     setFreeTx({ s: 'busy' })
     try {
+      const logo = await resolvedLogo(mode === 'KOL' ? largeAvatar(kol?.avatar) : '')
       const r = await fetch('/api/free-launch', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -155,7 +186,7 @@ export default function Launch() {
           name: name.trim(),
           symbol: symbol.trim().toUpperCase(),
           description: desc.trim(),
-          logo: logoUrl.trim(),
+          logo,
           twitter: twitter.trim(),
           website: website.trim(),
           payout: payout.trim(),
@@ -198,7 +229,7 @@ export default function Launch() {
             {mode === 'KOL' && list.map((k) => {
               const active = sel?.toLowerCase() === k.handle.toLowerCase()
               return (
-                <button key={k.handle} onClick={() => setSel(k.handle)} className={`w-full flex items-center gap-3 px-2 h-16 rounded-2xl text-left transition-all ${active ? 'glass' : 'hover:bg-white/5'}`}>
+                <button key={k.handle} onClick={() => { setSel(k.handle); focusDetails() }} className={`w-full flex items-center gap-3 px-2 h-16 rounded-2xl text-left transition-all ${active ? 'glass' : 'hover:bg-white/5'}`}>
                   <Avatar name={k.name} hue={hueFor(k.handle)} src={k.avatar} size={40} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 font-bold truncate"><span className="truncate">{k.name}</span> {isEndorsed(k.handle) && <Verified />}</div>
@@ -211,7 +242,7 @@ export default function Launch() {
             {mode === 'CLAN' && clanList.map((c) => {
               const active = clan === c.name
               return (
-                <button key={c.name} onClick={() => setClan(c.name)} className={`w-full flex items-center gap-3 px-2 h-16 rounded-2xl text-left transition-all ${active ? 'glass' : 'hover:bg-white/5'}`}>
+                <button key={c.name} onClick={() => { setClan(c.name); focusDetails() }} className={`w-full flex items-center gap-3 px-2 h-16 rounded-2xl text-left transition-all ${active ? 'glass' : 'hover:bg-white/5'}`}>
                   <div className="flex -space-x-2.5 shrink-0">
                     {c.members.slice(0, 3).map((m) => <Avatar key={m.handle} name={m.name} hue={hueFor(m.handle)} src={m.avatar} size={32} className="ring-2 ring-[#0b0a16]" />)}
                   </div>
@@ -234,6 +265,7 @@ export default function Launch() {
         </Panel>
 
         <section className="grid gap-5 content-start">
+          <div ref={detailsRef} className="scroll-mt-24" />
           <Panel className="p-4 md:p-5">
             <div className="font-bold text-[16px] mb-3">Coin details</div>
             {mode === 'KOL' && kol && (
@@ -265,18 +297,23 @@ export default function Launch() {
             <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Description (optional)" rows={3} className={`${field} h-auto py-3 mt-3 resize-none`} />
             <div className="mt-3 grid sm:grid-cols-2 gap-3">
               <div className="well rounded-2xl p-3 flex items-center gap-3">
-                <Avatar name={symbol || 'coin'} hue={mode === 'KOL' && kol ? hueFor(kol.handle) : 200} src={logoUrl.trim() || (mode === 'KOL' ? kol?.avatar : clanSel?.members[0]?.avatar)} size={48} />
+                <Avatar name={symbol || 'coin'} hue={mode === 'KOL' && kol ? hueFor(kol.handle) : 200} src={logoPreview || (mode === 'KOL' ? kol?.avatar : clanSel?.members[0]?.avatar)} size={56} />
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] font-bold">Coin image</div>
-                  <div className="text-[12px] text-text-secondary">Uses the KOL's FOMO photo unless you paste an image link.</div>
+                  <div className="text-[12px] text-text-secondary">{logoBlob ? 'Your image, resized to 512px.' : mode === 'KOL' ? "The KOL's FOMO photo, unless you pick your own." : 'Pick an image for the clan coin.'}</div>
+                  {logoErr && <div className="text-[12px] text-red mt-0.5">{logoErr}</div>}
                 </div>
+                <div className="flex flex-col gap-1.5 shrink-0">
+                  <button type="button" onClick={() => fileRef.current?.click()} className="glass rounded-xl h-9 px-3 text-[13px] font-bold">{logoBlob ? 'Change' : 'Upload'}</button>
+                  {logoBlob && <button type="button" onClick={resetImage} className="text-[12px] text-text-secondary hover:text-text-primary">Use KOL photo</button>}
+                </div>
+                <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => pickImage(e.target.files?.[0])} />
               </div>
               <div className="grid gap-3">
-                <input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="Image link (optional)" className={field} />
                 <input value={twitter} onChange={(e) => setTwitter(e.target.value)} placeholder="X link (optional)" className={field} />
+                <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="Website (optional)" className={field} />
               </div>
             </div>
-            <input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="Website (optional)" className={`${field} mt-3`} />
           </Panel>
 
           <Panel strong className="p-4 md:p-5">

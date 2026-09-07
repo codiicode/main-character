@@ -36,6 +36,26 @@ function devApi(): Plugin {
         }
       })
 
+      // Dev stand-in for /api/upload and /api/logo/:id (memory instead of KV).
+      const logos = new Map<string, { type: string; bytes: Buffer }>()
+      server.middlewares.use('/api/upload', async (req, res) => {
+        const chunks: Buffer[] = []
+        for await (const c of req) chunks.push(c as Buffer)
+        const bytes = Buffer.concat(chunks)
+        const type = (req.headers['content-type'] || 'image/jpeg').split(';')[0]
+        const id = require('node:crypto').createHash('sha256').update(bytes).digest('hex').slice(0, 32) + (type === 'image/png' ? '.png' : '.jpg')
+        logos.set(id, { type, bytes })
+        res.setHeader('content-type', 'application/json')
+        res.end(JSON.stringify({ url: `http://localhost:5173/api/logo/${id}`, id }))
+      })
+      server.middlewares.use('/api/logo', (req, res) => {
+        const id = (req.url ?? '').replace(/^//, '')
+        const l = logos.get(id)
+        if (!l) { res.statusCode = 404; res.end(); return }
+        res.setHeader('content-type', l.type)
+        res.end(l.bytes)
+      })
+
       // Same handler as production; env from .env.local, anvil account #2 as relayer, no KV / Turnstile.
       server.middlewares.use('/api/free-launch', async (req, res) => {
         if (req.method !== 'POST') {
