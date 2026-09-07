@@ -1,20 +1,26 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Search, ShieldCheck, Clock, ImagePlus, Rocket, Info } from 'lucide-react'
-import { kols } from '../data/mock'
+import { isEndorsed } from '../data/mock'
+import { useKols, hueFor, shortAddr } from '../data/kols'
 import { Avatar, Button, Pnl, Tag, Verified } from '../components/ui'
 
 export default function Launch() {
   const [params] = useSearchParams()
+  const { kols, loading } = useKols()
   const [q, setQ] = useState('')
   const [sel, setSel] = useState<string | null>(params.get('kol'))
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
   const [desc, setDesc] = useState('')
   const [devBuy, setDevBuy] = useState('0')
-  const list = useMemo(() => kols.filter((k) => (k.handle + k.name).toLowerCase().includes(q.toLowerCase())), [q])
-  const kol = kols.find((k) => k.handle === sel)
-  const canLaunch = !!kol && !!kol.wallet && name.length > 1 && symbol.length > 1
+  const list = useMemo(() => {
+    const s = q.trim().toLowerCase()
+    const base = s ? kols.filter((k) => (k.handle + ' ' + k.name).toLowerCase().includes(s)) : kols
+    return base.slice(0, 60)
+  }, [q, kols])
+  const kol = kols.find((k) => k.handle.toLowerCase() === sel?.toLowerCase())
+  const canLaunch = !!kol && !!kol.wallets.evm && name.length > 1 && symbol.length > 1
 
   const field = 'w-full h-12 rounded-xl bg-bg-primary/60 border border-white/8 focus:border-primary/60 outline-none px-4 text-[16px] placeholder:text-text-tertiary'
 
@@ -29,29 +35,34 @@ export default function Launch() {
           <div className="flex items-center gap-2 mb-3">
             <span className="w-6 h-6 rounded-full bg-primary text-white text-[13px] font-bold grid place-items-center">1</span>
             <span className="font-bold text-[16px]">Choose a KOL</span>
+            <span className="ml-auto text-[12px] text-text-secondary">{kols.length} FOMO traders</span>
           </div>
           <div className="h-11 rounded-xl bg-bg-primary/60 border border-white/8 flex items-center gap-2 px-3">
             <Search size={16} className="text-text-secondary" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search FOMO handle…" className="flex-1 bg-transparent outline-none text-[15px] placeholder:text-text-tertiary" />
           </div>
           <div className="mt-2 max-h-[420px] overflow-y-auto scrollbar-none -mx-1 px-1">
-            {list.map((k) => (
-              <button
-                key={k.handle}
-                onClick={() => setSel(k.handle)}
-                className={`w-full flex items-center gap-3 px-2 h-16 rounded-xl text-left transition-colors ${sel === k.handle ? 'bg-primary-transparent ring-1 ring-primary/50' : 'hover:bg-bg-tertiary-solid'}`}
-              >
-                <Avatar name={k.name} hue={k.hue} size={40} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 font-bold truncate">{k.name} {k.endorsed && <Verified />}</div>
-                  <div className="text-[13px] text-text-secondary truncate">@{k.handle} · {k.wallet ? 'wallet ready' : 'wallet pending'}</div>
-                </div>
-                <Pnl value={k.pnl24h} compact className="text-[14px]" />
-              </button>
-            ))}
-            {q && list.length === 0 && (
+            {loading && <div className="p-4 text-text-secondary text-[14px]">Loading traders…</div>}
+            {list.map((k) => {
+              const active = sel?.toLowerCase() === k.handle.toLowerCase()
+              return (
+                <button
+                  key={k.handle}
+                  onClick={() => setSel(k.handle)}
+                  className={`w-full flex items-center gap-3 px-2 h-16 rounded-xl text-left transition-colors ${active ? 'bg-primary-transparent ring-1 ring-primary/50' : 'hover:bg-bg-tertiary-solid'}`}
+                >
+                  <Avatar name={k.name} hue={hueFor(k.handle)} src={k.avatar} size={40} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 font-bold truncate"><span className="truncate">{k.name}</span> {isEndorsed(k.handle) && <Verified />}</div>
+                    <div className="text-[13px] text-text-secondary truncate">@{k.handle} · {k.wallets.evm ? 'wallet ready' : 'wallet pending'}</div>
+                  </div>
+                  <Pnl value={k.pnl['7d'] ?? k.pnl['24h'] ?? 0} compact className="text-[14px]" />
+                </button>
+              )
+            })}
+            {!loading && q && list.length === 0 && (
               <div className="p-4 text-center text-[14px] text-text-secondary">
-                Not on the list yet. <button className="text-primary font-bold">Request @{q}</button>
+                Not on the list yet. <button className="text-primary font-bold">Request @{q.trim()}</button>
                 <div className="text-[12px] mt-1 text-text-tertiary">We resolve their FOMO wallet first, then unlock launch.</div>
               </div>
             )}
@@ -67,10 +78,10 @@ export default function Launch() {
             </div>
             {kol && (
               <div className="mb-4 p-3 rounded-xl bg-bg-primary/60 flex items-center gap-3">
-                <Avatar name={kol.name} hue={kol.hue} size={36} />
+                <Avatar name={kol.name} hue={hueFor(kol.handle)} src={kol.avatar} size={36} />
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold">Paired with {kol.name} <span className="text-text-secondary font-medium">@{kol.handle}</span></div>
-                  <div className="text-[13px]">{kol.wallet ? <Tag tone="green"><ShieldCheck size={12} /> {kol.wallet}</Tag> : <Tag tone="yellow"><Clock size={12} /> Resolving wallet · launch locked</Tag>}</div>
+                  <div className="font-bold truncate">Paired with {kol.name} <span className="text-text-secondary font-medium">@{kol.handle}</span></div>
+                  <div className="text-[13px] mt-0.5">{kol.wallets.evm ? <Tag tone="green"><ShieldCheck size={12} /> {shortAddr(kol.wallets.evm)} on Robinhood Chain</Tag> : <Tag tone="yellow"><Clock size={12} /> Resolving wallet · launch locked</Tag>}</div>
                 </div>
               </div>
             )}

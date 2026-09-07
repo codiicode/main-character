@@ -1,12 +1,14 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { BadgeCheck } from 'lucide-react'
 
-export function Avatar({ name, hue, size = 40, className = '' }: { name: string; hue: number; size?: number; className?: string }) {
+export function Avatar({ name, hue, src, size = 40, className = '' }: { name: string; hue: number; src?: string | null; size?: number; className?: string }) {
+  const [broken, setBroken] = useState(false)
   const initials = name.replace(/[^a-z0-9]/gi, '').slice(0, 2).toUpperCase()
+  const showImg = !!src && !broken
   return (
     <div
-      className={`shrink-0 rounded-full grid place-items-center font-bold text-text-primary ${className}`}
+      className={`shrink-0 rounded-full grid place-items-center font-bold text-text-primary overflow-hidden ${className}`}
       style={{
         width: size,
         height: size,
@@ -15,7 +17,11 @@ export function Avatar({ name, hue, size = 40, className = '' }: { name: string;
         boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.08)',
       }}
     >
-      {initials}
+      {showImg ? (
+        <img src={src!} alt="" width={size} height={size} loading="lazy" className="w-full h-full object-cover" onError={() => setBroken(true)} />
+      ) : (
+        initials
+      )}
     </div>
   )
 }

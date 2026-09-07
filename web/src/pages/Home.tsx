@@ -1,12 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronRight, Flame, Rocket } from 'lucide-react'
-import { kols, coins, fmtUsd } from '../data/mock'
+import { coins, coinsFor, isEndorsed, fmtUsd } from '../data/mock'
+import { useKols, pnlFor, hueFor, type Window } from '../data/kols'
 import { Avatar, Button, Pnl, Change, Segment, Tag, Verified, Pill } from '../components/ui'
-
-type Window = '24h' | '7d' | '30d' | 'All'
-const pnlFor = (k: (typeof kols)[number], w: Window) =>
-  w === '24h' ? k.pnl24h : w === '7d' ? k.pnl7d : w === '30d' ? k.pnl30d : k.pnlAll
 
 function Medal({ rank }: { rank: number }) {
   if (rank > 3) return <span className="w-7 text-center text-text-secondary tabular text-[14px]">{rank}.</span>
@@ -21,12 +18,31 @@ function Medal({ rank }: { rank: number }) {
   )
 }
 
+function SkeletonRows() {
+  return (
+    <>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className={`flex items-center gap-3 px-4 h-16 ${i ? 'border-t border-white/5' : ''}`}>
+          <div className="w-7 h-4 rounded bg-bg-tertiary animate-pulse" />
+          <div className="w-11 h-11 rounded-full bg-bg-tertiary animate-pulse" />
+          <div className="flex-1 grid gap-1.5"><div className="h-3.5 w-32 rounded bg-bg-tertiary animate-pulse" /><div className="h-3 w-20 rounded bg-bg-tertiary animate-pulse" /></div>
+          <div className="h-4 w-24 rounded bg-bg-tertiary animate-pulse" />
+        </div>
+      ))}
+    </>
+  )
+}
+
 export default function Home() {
   const [win, setWin] = useState<Window>('24h')
   const [filter, setFilter] = useState<'All' | 'Endorsed' | 'Unclaimed'>('All')
-  const ranked = [...kols].sort((a, b) => pnlFor(b, win) - pnlFor(a, win))
-  const shown = ranked.filter((k) => (filter === 'All' ? true : filter === 'Endorsed' ? k.endorsed : !k.endorsed))
+  const [limit, setLimit] = useState(25)
+  const { kols, loading, syncedAt } = useKols()
+
+  const ranked = useMemo(() => kols.filter((k) => k.rank[win] != null).sort((a, b) => pnlFor(b, win) - pnlFor(a, win)), [kols, win])
+  const shown = ranked.filter((k) => (filter === 'All' ? true : filter === 'Endorsed' ? isEndorsed(k.handle) : !isEndorsed(k.handle)))
   const trending = [...coins].sort((a, b) => b.vol24h - a.vol24h)
+  const byHandle = (h: string) => kols.find((k) => k.handle.toLowerCase() === h.toLowerCase())
 
   return (
     <div className="grid gap-6 md:grid-cols-[1fr_380px] xl:grid-cols-[1fr_420px]">
@@ -51,12 +67,12 @@ export default function Home() {
           </div>
           <div className="flex gap-2.5 overflow-x-auto scrollbar-none -mx-4 px-4 md:mx-0 md:px-0">
             {trending.slice(0, 4).map((c) => {
-              const k = kols.find((x) => x.handle === c.kol)!
+              const k = byHandle(c.kol)
               return (
-                <Link key={c.address} to={`/kol/${k.handle}`} className="card rounded-2xl p-3 min-w-[168px] hover:bg-bg-tertiary-solid transition-colors">
+                <Link key={c.address} to={`/kol/${c.kol}`} className="card rounded-2xl p-3 min-w-[168px] hover:bg-bg-tertiary-solid transition-colors">
                   <div className="flex items-center gap-2">
-                    <Avatar name={k.name} hue={k.hue} size={28} />
-                    <span className="font-bold text-[15px] truncate">{k.handle}</span>
+                    <Avatar name={k?.name ?? c.kol} hue={hueFor(c.kol)} src={k?.avatar} size={28} />
+                    <span className="font-bold text-[15px] truncate">{c.kol}</span>
                   </div>
                   <div className="mt-2.5 flex items-center gap-2">
                     <Avatar name={c.symbol} hue={c.hue} size={22} />
@@ -75,7 +91,7 @@ export default function Home() {
               <Pill key={f} active={filter === f} onClick={() => setFilter(f)}>{f}</Pill>
             ))}
           </div>
-          <Segment options={['24h', '7d', '30d', 'All'] as Window[]} value={win} onChange={setWin} />
+          <Segment options={['24h', '7d', '30d', 'all'] as Window[]} value={win} onChange={setWin} />
         </div>
 
         {/* List */}
@@ -83,26 +99,28 @@ export default function Home() {
           <div className="hidden md:grid grid-cols-[40px_1fr_150px_120px_120px] items-center px-4 h-10 text-[13px] text-text-secondary font-medium border-b border-white/5">
             <span>#</span><span>Trader</span><span className="text-right">PnL {win}</span><span className="text-right">Coins</span><span className="text-right">Fees earned</span>
           </div>
-          {shown.map((k, i) => {
+          {loading && <SkeletonRows />}
+          {shown.slice(0, limit).map((k, i) => {
             const rank = ranked.indexOf(k) + 1
-            const myCoins = coins.filter((c) => c.kol === k.handle)
+            const myCoins = coinsFor(k.handle)
             const fees = myCoins.reduce((s, c) => s + c.feesEth, 0)
+            const endorsed = isEndorsed(k.handle)
             return (
               <Link
                 key={k.handle}
                 to={`/kol/${k.handle}`}
-                className={`grid grid-cols-[32px_1fr_auto] md:grid-cols-[40px_1fr_150px_120px_120px] items-center gap-2 md:gap-2 px-3 md:px-4 h-[72px] md:h-16 hover:bg-bg-tertiary-solid transition-colors ${
+                className={`grid grid-cols-[32px_1fr_auto] md:grid-cols-[40px_1fr_150px_120px_120px] items-center gap-2 px-3 md:px-4 h-[72px] md:h-16 hover:bg-bg-tertiary-solid transition-colors ${
                   i !== 0 ? 'border-t border-white/5' : ''
                 }`}
               >
                 <Medal rank={rank} />
                 <div className="flex items-center gap-2.5 md:gap-3 min-w-0">
-                  <Avatar name={k.name} hue={k.hue} size={44} />
+                  <Avatar name={k.name} hue={hueFor(k.handle)} src={k.avatar} size={44} />
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 font-bold text-[16px] md:text-base leading-tight truncate">
-                      <span className="truncate">{k.name}</span> {k.endorsed && <Verified />}
+                    <div className="flex items-center gap-1.5 font-bold text-[16px] md:text-base leading-tight">
+                      <span className="truncate">{k.name}</span> {endorsed && <Verified />}
                     </div>
-                    <div className="text-text-secondary text-[13px] md:text-[14px] truncate">@{k.handle}</div>
+                    <div className="text-text-secondary text-[13px] md:text-[14px] truncate">@{k.handle}{k.clan ? ` · ${k.clan}` : ''}</div>
                     <div className="md:hidden text-[12px] mt-0.5 whitespace-nowrap truncate">
                       {myCoins.length > 0 ? (
                         <><span className="text-green tabular font-bold">+{fees.toFixed(2)} ETH</span><span className="text-text-secondary"> · {myCoins.length} coin{myCoins.length > 1 ? 's' : ''}</span></>
@@ -127,10 +145,13 @@ export default function Home() {
               </Link>
             )
           })}
-          <button className="w-full h-12 text-text-secondary hover:text-text-primary text-[15px] font-medium border-t border-white/5 flex items-center justify-center gap-1">
-            View all 500 traders <ChevronRight size={16} />
-          </button>
+          {!loading && shown.length > limit && (
+            <button onClick={() => setLimit((l) => l + 50)} className="w-full h-12 text-text-secondary hover:text-text-primary text-[15px] font-medium border-t border-white/5 flex items-center justify-center gap-1">
+              Show more · {shown.length - limit} left <ChevronRight size={16} />
+            </button>
+          )}
         </div>
+        {syncedAt && <p className="text-text-tertiary text-[12px] mt-2">FOMO leaderboard · synced {new Date(syncedAt).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}</p>}
       </section>
 
       {/* Right: recent launches */}

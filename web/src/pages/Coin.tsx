@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, ExternalLink, Copy, Globe, Star } from 'lucide-react'
-import { coins, kols, fmtUsd, fmtPrice } from '../data/mock'
+import { coins, fmtUsd, fmtPrice } from '../data/mock'
+import { useKols, hueFor } from '../data/kols'
 import { Avatar, Button, Change, Tag, Verified } from '../components/ui'
 
 function ChartPlaceholder({ hue, up }: { hue: number; up: boolean }) {
@@ -36,9 +37,12 @@ function ChartPlaceholder({ hue, up }: { hue: number; up: boolean }) {
 
 export default function Coin() {
   const { address } = useParams()
+  const { kols } = useKols()
   const c = coins.find((x) => x.address.toLowerCase() === address?.toLowerCase())
   if (!c) return <div className="text-text-secondary">Coin not found.</div>
-  const k = kols.find((x) => x.handle === c.kol)!
+  const k = kols.find((x) => x.handle.toLowerCase() === c.kol.toLowerCase())
+  const kName = k?.name ?? c.kol
+  const kHue = hueFor(c.kol)
   const kolShare = c.endorsed ? 2.0 : 1.0
   const mainShare = c.endorsed ? 1.2 : 2.2
 
@@ -59,7 +63,7 @@ export default function Coin() {
               </div>
               <div className="flex items-center gap-2 text-[14px] text-text-secondary">
                 <span>for</span>
-                <Link to={`/kol/${k.handle}`} className="inline-flex items-center gap-1 text-text-primary font-bold hover:underline"><Avatar name={k.name} hue={k.hue} size={16} /> @{k.handle}</Link>
+                <Link to={`/kol/${c.kol}`} className="inline-flex items-center gap-1 text-text-primary font-bold hover:underline"><Avatar name={kName} hue={kHue} src={k?.avatar} size={16} /> @{c.kol}</Link>
                 <span>·</span>
                 <button className="inline-flex items-center gap-1 hover:text-text-primary font-mono">{c.address.slice(0, 6)}…{c.address.slice(-4)} <Copy size={12} /></button>
               </div>
@@ -101,13 +105,13 @@ export default function Coin() {
               <div className="bg-primary" style={{ width: `${(mainShare / 3.7) * 100}%` }} />
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2 text-[14px]">
-              <div><div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green" /> KOL @{k.handle}</div><div className="font-bold tabular text-[17px]">{kolShare.toFixed(1)}%</div><div className="text-text-secondary text-[12px]">of every trade</div></div>
+              <div><div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green" /> KOL @{c.kol}</div><div className="font-bold tabular text-[17px]">{kolShare.toFixed(1)}%</div><div className="text-text-secondary text-[12px]">of every trade</div></div>
               <div><div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-warning" /> Launcher</div><div className="font-bold tabular text-[17px]">0.5%</div><div className="text-text-secondary text-[12px]">{c.launcher}</div></div>
               <div><div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary" /> MAIN</div><div className="font-bold tabular text-[17px]">{mainShare.toFixed(1)}%</div><div className="text-text-secondary text-[12px]">platform</div></div>
             </div>
             {!c.endorsed && (
               <div className="mt-4 p-3 rounded-xl bg-primary-transparent text-[14px] flex flex-col sm:flex-row sm:items-center gap-2">
-                <span className="flex-1">Are you <b>@{k.handle}</b>? Endorse this coin and your share doubles to 2.0%, paid to your FOMO wallet.</span>
+                <span className="flex-1">Are you <b>@{c.kol}</b>? Endorse this coin and your share doubles to 2.0%, paid to your FOMO wallet.</span>
                 <Button size="sm" variant="primary">Endorse with X</Button>
               </div>
             )}
@@ -129,7 +133,7 @@ export default function Coin() {
               <Button variant="green" size="lg" className="w-full">Buy on FOMO <ExternalLink size={16} /></Button>
               <Button variant="glass" size="md" className="w-full">Trade on Pons <ExternalLink size={16} /></Button>
             </div>
-            <p className="text-text-secondary text-[12px] mt-3 leading-relaxed">In-app trading is coming. Until then, FOMO lists every MAIN coin automatically on Robinhood Chain. Fees flow to @{k.handle} wherever the trade happens.</p>
+            <p className="text-text-secondary text-[12px] mt-3 leading-relaxed">In-app trading is coming. Until then, FOMO lists every MAIN coin automatically on Robinhood Chain. Fees flow to @{c.kol} wherever the trade happens.</p>
           </div>
 
           <div className="card rounded-2xl p-4 mt-4">
