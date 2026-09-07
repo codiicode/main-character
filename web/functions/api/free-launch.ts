@@ -1,3 +1,4 @@
+/// <reference types="@cloudflare/workers-types" />
 // POST /api/free-launch
 // Launches a coin from MAIN's relayer wallet for someone who has no wallet. MAIN pays the Pons fee + gas.
 // Guards: Cloudflare Turnstile, per-IP / per-KOL / global daily caps in KV, relayer balance floor.
