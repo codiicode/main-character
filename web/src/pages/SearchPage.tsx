@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Search as SearchIcon, X } from 'lucide-react'
-import { coins, fmtUsd, isEndorsed } from '../data/mock'
+import { fmtUsd } from '../data/mock'
 import { useAllKols, resolveKol, hueFor } from '../data/kols'
-import { Avatar, Pnl, Change, Tag, Verified, Panel, Pill, Empty, Button } from '../components/ui'
+import { useCoins, isEndorsedRef, fmtEth } from '../data/coins'
+import { Avatar, Pnl, Tag, Verified, Panel, Pill, Empty, Button } from '../components/ui'
 
 type Tab = 'All' | 'KOLs' | 'Coins'
 
 export default function SearchPage() {
   const { kols } = useAllKols()
+  const { coins } = useCoins()
   const nav = useNavigate()
   const [q, setQ] = useState('')
   const [tab, setTab] = useState<Tab>('All')
@@ -18,7 +20,7 @@ export default function SearchPage() {
 
   const s = q.trim().replace(/^@/, '').toLowerCase()
   const kolHits = useMemo(() => (s ? kols.filter((k) => (k.handle + ' ' + k.name).toLowerCase().includes(s)) : kols.slice(0, 8)), [kols, s])
-  const coinHits = useMemo(() => (s ? coins.filter((c) => (c.symbol + ' ' + c.name + ' ' + c.kol + ' ' + c.address).toLowerCase().includes(s)) : coins), [s])
+  const coinHits = useMemo(() => (s ? coins.filter((c) => (c.symbol + ' ' + c.name + ' ' + c.kolRef + ' ' + c.address).toLowerCase().includes(s)) : coins.slice(0, 8)), [coins, s])
   const showK = tab !== 'Coins'
   const showC = tab !== 'KOLs'
   const nothing = !!s && (!showK || kolHits.length === 0) && (!showC || coinHits.length === 0)
@@ -39,9 +41,7 @@ export default function SearchPage() {
         {q && <button type="button" onClick={() => setQ('')} aria-label="Clear" className="text-text-secondary hover:text-text-primary"><X size={18} /></button>}
       </form>
 
-      <div className="flex items-center gap-0.5 mt-4 mb-3">
-        {(['All', 'KOLs', 'Coins'] as Tab[]).map((t) => <Pill key={t} active={tab === t} onClick={() => setTab(t)}>{t}</Pill>)}
-      </div>
+      <div className="flex items-center gap-0.5 mt-4 mb-3">{(['All', 'KOLs', 'Coins'] as Tab[]).map((t) => <Pill key={t} active={tab === t} onClick={() => setTab(t)}>{t}</Pill>)}</div>
 
       {nothing && (
         <Empty
@@ -50,9 +50,7 @@ export default function SearchPage() {
           action={
             lookup.state === 'none' && lookup.candidates?.length ? (
               <div className="flex flex-wrap justify-center gap-1.5">{lookup.candidates.map((c) => <button key={c} onClick={() => doLookup(c)} className="glass rounded-full px-3 h-8 text-[13px] font-semibold">@{c}</button>)}</div>
-            ) : lookup.state === 'idle' && showK ? (
-              <Button size="sm" variant="glass" onClick={() => doLookup(s)}>Look up @{s} on FOMO</Button>
-            ) : undefined
+            ) : lookup.state === 'idle' && showK ? <Button size="sm" variant="glass" onClick={() => doLookup(s)}>Look up @{s} on FOMO</Button> : undefined
           }
         />
       )}
@@ -64,10 +62,7 @@ export default function SearchPage() {
             {kolHits.slice(0, 12).map((k, i) => (
               <Link key={k.handle} to={`/kol/${k.handle}`} className={`row-hover flex items-center gap-3 px-4 h-16 ${i ? 'hair' : ''}`}>
                 <Avatar name={k.name} hue={hueFor(k.handle)} src={k.avatar} size={40} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 font-bold truncate"><span className="truncate">{k.name}</span>{isEndorsed(k.handle) && <Verified />}</div>
-                  <div className="text-[13px] text-text-secondary truncate">@{k.handle}</div>
-                </div>
+                <div className="flex-1 min-w-0"><div className="flex items-center gap-1.5 font-bold truncate"><span className="truncate">{k.name}</span>{isEndorsedRef(coins, k.handle) && <Verified />}</div><div className="text-[13px] text-text-secondary truncate">@{k.handle}</div></div>
                 <Pnl value={k.pnl['7d'] ?? k.pnl['24h'] ?? 0} compact className="text-[15px]" />
               </Link>
             ))}
@@ -81,12 +76,9 @@ export default function SearchPage() {
           <Panel className="overflow-hidden">
             {coinHits.map((c, i) => (
               <Link key={c.address} to={`/coin/${c.address}`} className={`row-hover flex items-center gap-3 px-4 h-16 ${i ? 'hair' : ''}`}>
-                <Avatar name={c.symbol} hue={hueFor(c.kol)} src={kols.find((k) => k.handle.toLowerCase() === c.kol.toLowerCase())?.avatar} size={40} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 font-bold"><span>{c.symbol}</span>{c.endorsed && <Verified />}{c.graduated && <Tag tone="green">Graduated</Tag>}</div>
-                  <div className="text-[13px] text-text-secondary truncate">{fmtUsd(c.mcap, { compact: true })} mcap for @{c.kol}</div>
-                </div>
-                <Change value={c.change24h} className="text-[14px]" />
+                <Avatar name={c.symbol} hue={hueFor(c.kolRef)} src={c.logo ?? kols.find((k) => k.handle.toLowerCase() === c.kolRef.toLowerCase())?.avatar} size={40} />
+                <div className="flex-1 min-w-0"><div className="flex items-center gap-2 font-bold"><span>${c.symbol}</span>{c.endorsed && <Verified />}{c.graduated && <Tag tone="green">Graduated</Tag>}</div><div className="text-[13px] text-text-secondary truncate">{fmtUsd(c.mcapUsd, { compact: true })} mcap for {c.kind === 'KOL' ? '@' : ''}{c.kolRef}</div></div>
+                <span className="text-green font-bold tabular text-[14px]">+{fmtEth(c.toKolEth)}</span>
               </Link>
             ))}
           </Panel>

@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Share } from 'lucide-react'
-import { coinsFor, isEndorsed, fmtUsd, fmtCount } from '../data/mock'
+import { fmtUsd, fmtCount } from '../data/mock'
 import { useAllKols, resolveKol, hueFor, shortAddr } from '../data/kols'
-import { Avatar, Button, Pnl, Change, Stat, Tag, Verified, Panel, IconButton, Empty } from '../components/ui'
+import { useCoins, coinsFor, isEndorsedRef, fmtEth, ago } from '../data/coins'
+import { Avatar, Button, Pnl, Stat, Tag, Verified, Panel, IconButton, Empty } from '../components/ui'
 
 export default function Kol() {
   const { handle } = useParams()
   const { kols, loading } = useAllKols()
+  const { coins } = useCoins()
   const [lookedUp, setLookedUp] = useState(false)
   const k = kols.find((x) => x.handle.toLowerCase() === handle?.toLowerCase())
 
@@ -17,11 +19,16 @@ export default function Kol() {
 
   if (loading || (!k && !lookedUp)) return <div className="text-text-secondary">Loading</div>
   if (!k) return <Empty title="KOL not found" body={`There is no FOMO trader called @${handle}.`} action={<Button to="/kols" variant="glass">Browse KOLs</Button>} />
-  const my = coinsFor(k.handle)
-  const fees = my.reduce((s, c) => s + c.feesEth, 0)
-  const endorsed = isEndorsed(k.handle)
+  const my = coinsFor(coins, k.handle)
+  const earned = my.reduce((s, c) => s + c.toKolEth, 0)
+  const endorsed = isEndorsedRef(coins, k.handle)
   const hue = hueFor(k.handle)
   const rank24 = k.rank['24h']
+  const share = () => {
+    const url = `${location.origin}/kol/${k.handle}`
+    if (navigator.share) navigator.share({ title: `${k.name} on MAIN`, url }).catch(() => {})
+    else navigator.clipboard?.writeText(url)
+  }
 
   return (
     <div className="max-w-[980px] mx-auto">
@@ -41,7 +48,7 @@ export default function Kol() {
               </div>
             </div>
           </div>
-          <IconButton label="Share" className="shrink-0"><Share size={18} /></IconButton>
+          <IconButton label="Share" className="shrink-0" onClick={share}><Share size={18} /></IconButton>
         </div>
 
         {k.description && <p className="relative mt-4 text-[15px] text-text-secondary max-w-[60ch]">{k.description}</p>}
@@ -49,23 +56,20 @@ export default function Kol() {
         <div className="relative mt-5 grid grid-cols-2 md:grid-cols-4 gap-2.5">
           <Stat label="PnL today" value={<Pnl value={k.pnl['24h'] ?? 0} compact />} />
           <Stat label="PnL 7 days" value={k.pnl['7d'] != null ? <Pnl value={k.pnl['7d']} compact /> : <span className="text-text-tertiary">—</span>} sub={k.pnl.all != null ? <span className="text-text-secondary">all time <Pnl value={k.pnl.all} compact className="text-[13px]" /></span> : undefined} />
-          <Stat label="Earned on MAIN" value={<span className="text-green">+{fees.toFixed(2)} ETH</span>} sub={<span className="text-text-secondary">about {fmtUsd(fees * 2501)}</span>} />
+          <Stat label="Earned on MAIN" value={<span className="text-green">+{fmtEth(earned)}</span>} sub={<span className="text-text-secondary">about {fmtUsd(earned * 2500)}</span>} />
           <Stat label="Coins" value={my.length} sub={<span className="text-text-secondary">{my.filter((c) => c.endorsed).length} endorsed</span>} />
         </div>
 
         <div className="relative mt-4 flex flex-wrap gap-x-5 gap-y-1.5 text-[14px] text-text-secondary">
           <span>{fmtCount(k.followers)} followers</span>
           <span>{k.trades.toLocaleString()} trades</span>
-          {k.wallets.evm && (
-            <a href={`https://robinhoodchain.blockscout.com/address/${k.wallets.evm}`} target="_blank" rel="noreferrer" className="hover:text-text-primary underline underline-offset-4 decoration-white/20">
-              Wallet on Robinhood Chain
-            </a>
-          )}
+          {k.wallets.evm && <a href={`https://robinhoodchain.blockscout.com/address/${k.wallets.evm}`} target="_blank" rel="noreferrer" className="hover:text-text-primary underline underline-offset-4 decoration-white/20">Wallet on Robinhood Chain</a>}
         </div>
 
         <div className="relative mt-6 flex flex-col sm:flex-row gap-2.5">
           <Button variant="primary" size="lg" to={`/launch?kol=${k.handle}`} className="flex-1">Launch a coin for {k.name}</Button>
-          {!endorsed && <Button variant="glass" size="lg" className="flex-1">I am {k.name}, claim my fees</Button>}
+          {k.clan && <Button variant="glass" size="lg" to={`/launch?clan=${encodeURIComponent(k.clan)}`} className="flex-1">Launch for the {k.clan} clan</Button>}
+          {!endorsed && my.length > 0 && <Button variant="glass" size="lg" to={`/endorse/${my[0].address}`} className="flex-1">I am {k.name}, endorse</Button>}
         </div>
       </Panel>
 
@@ -77,15 +81,12 @@ export default function Kol() {
           <Panel className="overflow-hidden">
             {my.map((c, i) => (
               <Link key={c.address} to={`/coin/${c.address}`} className={`row-hover flex items-center gap-3 px-4 h-[72px] ${i ? 'hair' : ''}`}>
-                <Avatar name={c.symbol} hue={hue} src={k.avatar} size={44} />
+                <Avatar name={c.symbol} hue={hue} src={c.logo ?? k.avatar} size={44} />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 font-bold"><span>{c.symbol}</span><span className="text-text-secondary font-medium truncate">{c.name}</span>{c.endorsed && <Tag tone="primary">Endorsed</Tag>}</div>
-                  <div className="text-text-secondary text-[14px]">{fmtUsd(c.mcap, { compact: true })} mcap, {c.holders} holders, {c.createdAt} ago</div>
+                  <div className="flex items-center gap-2 font-bold"><span>${c.symbol}</span><span className="text-text-secondary font-medium truncate">{c.name}</span>{c.endorsed && <Tag tone="primary">Endorsed</Tag>}{c.graduated && <Tag tone="green">Graduated</Tag>}</div>
+                  <div className="text-text-secondary text-[14px]">{fmtUsd(c.mcapUsd, { compact: true })} mcap, {c.buyers} buyers{c.launchedAt ? `, ${ago(c.launchedAt)} ago` : ''}</div>
                 </div>
-                <div className="text-right">
-                  <div className="font-bold tabular">+{c.feesEth.toFixed(2)} ETH</div>
-                  <Change value={c.change24h} className="text-[13px]" />
-                </div>
+                <div className="text-right"><div className="font-bold tabular text-green">+{fmtEth(c.toKolEth)}</div><div className="text-[12px] text-text-secondary">to @{k.handle}</div></div>
               </Link>
             ))}
           </Panel>

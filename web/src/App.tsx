@@ -1,6 +1,7 @@
 import { Outlet, NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
 import { Home, Search, Plus, Users, Wallet } from 'lucide-react'
 import { Button } from './components/ui'
+import { ConnectButton } from './components/Connect'
 
 function Logo() {
   return (
@@ -61,7 +62,7 @@ export default function App() {
           </button>
           <div className="flex items-center gap-2">
             <Button variant="glass" size="sm" to="/launch">Launch</Button>
-            <Button variant="primary" size="sm" to="/me">Connect</Button>
+            <ConnectButton />
           </div>
         </div>
       </header>
@@ -70,7 +71,7 @@ export default function App() {
       <header className="md:hidden sticky top-0 z-40 px-3 pt-3">
         <div className="panel rounded-full h-14 pl-4 pr-2 flex items-center justify-between">
           <Logo />
-          <Button variant="primary" size="sm" to="/me">Connect</Button>
+          <ConnectButton />
         </div>
       </header>
 
