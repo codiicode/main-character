@@ -60,11 +60,17 @@ export type ResolveResult = { kol: Kol | null; candidates?: string[]; error?: st
 export async function resolveKol(handle: string): Promise<ResolveResult> {
   const h = handle.trim().replace(/^@/, '')
   if (!h) return { kol: null, error: 'Enter a FOMO handle.' }
+  // A local record is only trusted when it carries a wallet; otherwise ask FOMO again.
   const local = [...(cache?.kols ?? []), ...resolved.values()].find((k) => k.handle.toLowerCase() === h.toLowerCase())
-  if (local) return { kol: local }
+  if (local?.wallets.evm) return { kol: local }
   try {
-    const r = await fetch(`/api/resolve?handle=${encodeURIComponent(h)}`)
-    const body = (await r.json()) as ResolveResult
+    const get = async (fresh: boolean) => {
+      const r = await fetch(`/api/resolve?handle=${encodeURIComponent(h)}${fresh ? "&fresh=1" : ""}`)
+      return { r, body: (await r.json()) as ResolveResult }
+    }
+    let { r, body } = await get(false)
+    // Empty or wallet-less answer: bypass caches once, the profile endpoint usually has the wallet.
+    if (r.ok && (!body.kol || !body.kol.wallets.evm)) ({ r, body } = await get(true))
     if (!r.ok) return { kol: null, error: body.error ?? `Lookup failed (${r.status})` }
     if (body.kol) {
       resolved.set(body.kol.handle.toLowerCase(), body.kol)
@@ -85,8 +91,11 @@ export function useAllKols() {
     listeners.add(l)
     return () => { listeners.delete(l) }
   }, [])
+  if (resolved.size === 0) return base
+  // Freshly resolved records win over the snapshot (they may carry a wallet the snapshot lacked).
+  const merged = base.kols.map((k) => resolved.get(k.handle.toLowerCase()) ?? k)
   const extra = [...resolved.values()].filter((r) => !base.kols.some((k) => k.handle.toLowerCase() === r.handle.toLowerCase()))
-  return { ...base, kols: extra.length ? [...base.kols, ...extra] : base.kols }
+  return { ...base, kols: [...merged, ...extra] }
 }
 
 export const pnlFor = (k: Kol, w: Window) => k.pnl[w] ?? 0
