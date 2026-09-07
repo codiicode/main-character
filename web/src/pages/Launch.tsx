@@ -142,7 +142,7 @@ export default function Launch() {
 
       <div className="mt-6 grid gap-5 md:grid-cols-[380px_1fr]">
         {/* Choose target */}
-        <Panel className="p-4">
+        <Panel className="p-4 flex flex-col md:sticky md:top-[96px] md:h-[calc(100dvh-128px)] md:min-h-[520px]">
           <div className="well rounded-full p-1 grid grid-cols-2 gap-1 mb-3">
             {(['KOL', 'CLAN'] as Mode[]).map((m) => (
               <button key={m} onClick={() => { setMode(m); setQ('') }} className={`h-9 rounded-full text-[14px] font-bold transition-all ${mode === m ? 'glass' : 'text-text-secondary'}`}>{m === 'KOL' ? 'One trader' : 'A clan'}</button>
@@ -152,7 +152,7 @@ export default function Launch() {
             <Search size={16} className="text-text-secondary" />
             <input value={q} onChange={(e) => { setQ(e.target.value); setLookup({ state: 'idle' }) }} placeholder={mode === 'KOL' ? 'Type any FOMO handle' : 'Search clans'} className="flex-1 bg-transparent outline-none text-[15px] placeholder:text-text-tertiary" />
           </form>
-          <div className="mt-2 max-h-[440px] overflow-y-auto scrollbar-none -mx-1 px-1">
+          <div className="mt-2 flex-1 min-h-[360px] md:min-h-0 overflow-y-auto scroll-thin -mx-1 pl-1 pr-2">
             {loading && <div className="p-4 text-text-secondary text-[14px]">Loading traders</div>}
             {mode === 'KOL' && list.map((k) => {
               const active = sel?.toLowerCase() === k.handle.toLowerCase()
