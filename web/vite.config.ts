@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { resolve } from 'node:path'
 import { normalizeHandle, resolveHandle } from './functions/_lib/fomo.js'
 import { onRequestPost as freeLaunch } from './functions/api/free-launch.js'
@@ -43,13 +44,13 @@ function devApi(): Plugin {
         for await (const c of req) chunks.push(c as Buffer)
         const bytes = Buffer.concat(chunks)
         const type = (req.headers['content-type'] || 'image/jpeg').split(';')[0]
-        const id = require('node:crypto').createHash('sha256').update(bytes).digest('hex').slice(0, 32) + (type === 'image/png' ? '.png' : '.jpg')
+        const id = createHash('sha256').update(bytes).digest('hex').slice(0, 32) + (type === 'image/png' ? '.png' : '.jpg')
         logos.set(id, { type, bytes })
         res.setHeader('content-type', 'application/json')
         res.end(JSON.stringify({ url: `http://localhost:5173/api/logo/${id}`, id }))
       })
       server.middlewares.use('/api/logo', (req, res) => {
-        const id = (req.url ?? '').replace(/^//, '')
+        const id = (req.url ?? '').replace(/^\/+/, '')
         const l = logos.get(id)
         if (!l) { res.statusCode = 404; res.end(); return }
         res.setHeader('content-type', l.type)
