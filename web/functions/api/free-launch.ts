@@ -4,7 +4,7 @@
 // Guards: Cloudflare Turnstile, per-IP / per-KOL / global daily caps in KV, relayer balance floor.
 import { createPublicClient, createWalletClient, http, defineChain, decodeEventLog, parseAbi, formatEther, type Address, type Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { jsonResponse, normalizeHandle, resolveHandle, type Kol } from '../_lib/fomo'
+import { jsonResponse, normalizeHandle, resolveHandle, type Kol } from '../_lib/fomo.js'
 
 type Env = {
   RELAYER_PK?: string
