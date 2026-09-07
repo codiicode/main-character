@@ -105,3 +105,10 @@ Satta: `FOMOAPI_KEY`, `SESSION_SECRET`. Saknas: `X_CLIENT_ID`, `X_CLIENT_SECRET`
 - X-DM/tagg till KOL vid launch (kräver X:s betalda API-nivå för att posta).
 - Push-notiser för watchlist (kräver backend + service worker).
 - Riktig prisgraf och handel i MAIN (kräver trade-indexer).
+
+## 9. Mainnet-deploy 2026-09-08 00:48
+- `MainLauncher` **0xce0f3C1Be0836561A6F4aE8bA0df5B8AE1684dC4**, block 57203022, tx 0x9ddd63d2…b06bc6
+- `MainSplitter` impl 0x8E746424A0dfb9551F8EBD2d68966a9A828806e9
+- owner (deploy-wallet) 0xB9a5753422657Cdb04f4c95b30Ee5bb26C0Ecd02, treasury 0x0B1c79A94e6e933eD3531FE11A9cD03ce1369966, signer = relayer 0x5332A888A09b128Bf84e2ce75634CCb60026CF62
+- Shares 2703/5405/1351, tax 300. Domän: maincharacter.family (Cloudflare-zon, DNS-poster ska vara CNAME → main-character-c38.pages.dev).
+- Frontend: `web/.env.production` (VITE_MAIN_LAUNCHER, VITE_MAIN_START_BLOCK, VITE_RPC). Pages-secrets: MAIN_LAUNCHER, MAIN_START_BLOCK.
