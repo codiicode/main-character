@@ -9,6 +9,8 @@ import { Avatar, Button, Tag, Verified, Panel, IconButton, Empty } from '../comp
 import { short } from '../components/Connect'
 import { explorerAddress, explorerTx, MAIN_LAUNCHER_ADDRESS, robinhoodChain } from '../lib/chain'
 import { launcherAbi } from '../lib/launcher'
+import { ShareButton } from '../components/ShareCard'
+import { useWatchlist, watchKey } from '../data/watchlist'
 
 function Chart({ hue, up }: { hue: number; up: boolean }) {
   const pts = Array.from({ length: 60 }, (_, i) => {
@@ -41,6 +43,7 @@ export default function Coin() {
   const [copied, setCopied] = useState(false)
   const [payout, setPayout] = useState<'idle' | 'busy' | 'done' | 'error'>('idle')
   const [usd, setUsd] = useState(2500)
+  const watch = useWatchlist()
   void getEthUsd().then(setUsd)
 
   const c = coins.find((x) => x.address.toLowerCase() === address?.toLowerCase())
@@ -93,7 +96,8 @@ export default function Coin() {
               </div>
               <div className="ml-auto flex items-center gap-1.5">
                 <IconButton label="Explorer" className="w-9 h-9" onClick={() => window.open(explorerAddress(c.address), '_blank')}><Globe size={16} /></IconButton>
-                <IconButton label="Watch" className="w-9 h-9"><Star size={16} /></IconButton>
+                <IconButton label="Watch" className={"w-9 h-9 " + (watch.has(watchKey('coin', c.address)) ? 'text-warning' : '')} onClick={() => watch.toggle(watchKey('coin', c.address))}><Star size={16} fill={watch.has(watchKey('coin', c.address)) ? 'currentColor' : 'none'} /></IconButton>
+                <ShareButton size="sm" input={{ title: '$' + c.symbol, subtitle: c.kind === 'KOL' ? `A coin for @${c.kolRef}` : `A coin for the ${c.kolRef} clan`, line: c.kind === 'KOL' ? `${kolPct} of every trade goes to @${c.kolRef}` : `${kolPct} of every trade goes to the clan`, stat: c.toKolEth > 0 ? `+${fmtEth(c.toKolEth)} paid so far` : undefined, avatar: c.logo ?? k?.avatar, hue, url: `${location.origin}/coin/${c.address}`, endorsed: c.endorsed }} />
               </div>
             </div>
 

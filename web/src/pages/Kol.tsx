@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Share } from 'lucide-react'
+import { ArrowLeft, Star } from 'lucide-react'
+import { ShareButton } from '../components/ShareCard'
+import { useWatchlist, watchKey } from '../data/watchlist'
 import { fmtUsd, fmtCount } from '../data/mock'
 import { useAllKols, resolveKol, hueFor, shortAddr } from '../data/kols'
 import { useCoins, coinsFor, isEndorsedRef, fmtEth, ago } from '../data/coins'
@@ -11,6 +13,7 @@ export default function Kol() {
   const { kols, loading } = useAllKols()
   const { coins } = useCoins()
   const [lookedUp, setLookedUp] = useState(false)
+  const watch = useWatchlist()
   const k = kols.find((x) => x.handle.toLowerCase() === handle?.toLowerCase())
 
   useEffect(() => {
@@ -24,11 +27,6 @@ export default function Kol() {
   const endorsed = isEndorsedRef(coins, k.handle)
   const hue = hueFor(k.handle)
   const rank24 = k.rank['24h']
-  const share = () => {
-    const url = `${location.origin}/kol/${k.handle}`
-    if (navigator.share) navigator.share({ title: `${k.name} on MAIN`, url }).catch(() => {})
-    else navigator.clipboard?.writeText(url)
-  }
 
   return (
     <div className="max-w-[980px] mx-auto">
@@ -48,7 +46,10 @@ export default function Kol() {
               </div>
             </div>
           </div>
-          <IconButton label="Share" className="shrink-0" onClick={share}><Share size={18} /></IconButton>
+          <div className="flex items-center gap-2 shrink-0">
+            <IconButton label="Watch" className={watch.has(watchKey('kol', k.handle)) ? 'text-warning' : ''} onClick={() => watch.toggle(watchKey('kol', k.handle))}><Star size={18} fill={watch.has(watchKey('kol', k.handle)) ? 'currentColor' : 'none'} /></IconButton>
+            <ShareButton size="sm" input={{ title: k.name, subtitle: `@${k.handle} on MAIN`, line: my.length ? `${endorsed ? '2%' : '1%'} of every trade goes to @${k.handle}` : `Launch a coin for @${k.handle}`, stat: earned > 0 ? `+${fmtEth(earned)} paid so far` : `${fmtCount(k.followers)} followers on FOMO`, avatar: k.avatar, hue, url: `${location.origin}/kol/${k.handle}`, endorsed }} />
+          </div>
         </div>
 
         {k.description && <p className="relative mt-4 text-[15px] text-text-secondary max-w-[60ch]">{k.description}</p>}

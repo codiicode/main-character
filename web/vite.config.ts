@@ -19,6 +19,18 @@ function devApi(): Plugin {
   return {
     name: 'main-dev-api',
     configureServer(server) {
+      server.middlewares.use('/api/img', async (req, res) => {
+        const u = new URL(req.url ?? '', 'http://localhost').searchParams.get('u') ?? ''
+        try {
+          const up = await fetch(u)
+          res.setHeader('content-type', up.headers.get('content-type') ?? 'image/jpeg')
+          res.setHeader('access-control-allow-origin', '*')
+          res.end(Buffer.from(await up.arrayBuffer()))
+        } catch {
+          res.statusCode = 502
+          res.end()
+        }
+      })
       server.middlewares.use('/api/resolve', async (req, res) => {
         const url = new URL(req.url ?? '', 'http://localhost')
         const handle = normalizeHandle(url.searchParams.get('handle'))
