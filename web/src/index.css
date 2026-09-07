@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+/* Design tokens — extracted from fomo.family root-v2 bundle. Swap Satoshi → Aeonik when licensed. */
+@theme {
+  --font-sans: "Satoshi", "Aeonik", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --color-bg-primary: #060510;
+  --color-bg-secondary: #12111a;
+  --color-bg-tertiary: #cbd0eb1a;
+  --color-bg-tertiary-solid: #161522;
+
+  --color-primary: #516af6;
+  --color-primary-transparent: #516af629;
+  --color-accent-secondary: #221d4b;
+
+  --color-text-primary: #f7f7f7;
+  --color-text-secondary: #9899a3;
+  --color-text-tertiary: #474b52;
+
+  --color-border: #474b52;
+  --color-input: #474b52;
+
+  --color-green: #21c95e;
+  --color-green-transparent: #21c95e33;
+  --color-red: #ff622e;
+  --color-red-transparent: #ff622e33;
+  --color-yellow: #ffbf17;
+  --color-warning: #ffc74f;
+  --color-warning-transparent: #ffc74f1f;
+  --color-dev: #fd5dd3;
+
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+
+  --blur-sm: 8px;
+  --blur-md: 12px;
+  --blur-xl: 24px;
+}
+
+@layer base {
+  html { color-scheme: dark; }
+  body {
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    font-weight: 500;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    min-height: 100dvh;
+  }
+  h1, h2, h3 { font-weight: 500; letter-spacing: -0.04em; }
+  button { font-family: inherit; cursor: pointer; }
+  input, textarea { font-family: inherit; }
+  ::selection { background: var(--color-primary-transparent); }
+}
+
+@utility glass {
+  background-color: rgba(255, 255, 255, 0.12);
+  border: 0.8px solid rgba(203, 208, 235, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+@utility glass-primary {
+  background-color: rgba(96, 106, 247, 0.5);
+  border: 0.8px solid rgba(203, 208, 235, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+@utility glass-dark {
+  background-color: rgba(18, 17, 26, 0.72);
+  border: 0.8px solid rgba(203, 208, 235, 0.08);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+@utility card {
+  background-color: var(--color-bg-secondary);
+  border: 0.8px solid rgba(203, 208, 235, 0.06);
+}
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+/* Subtle cosmic backdrop like fomo's landing */
+.bg-space {
+  background:
+    radial-gradient(1200px 600px at 50% -200px, rgba(81, 106, 246, 0.18), transparent 60%),
+    radial-gradient(800px 400px at 90% 10%, rgba(34, 29, 75, 0.6), transparent 60%),
+    var(--color-bg-primary);
+}

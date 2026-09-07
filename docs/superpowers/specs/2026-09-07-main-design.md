@@ -1,0 +1,82 @@
+# MAIN (Main Character) – designspec
+
+Datum: 2026-09-07. Status: del 1 (systemöversikt) godkänd. Del 2–4 (kontrakt, backend, test) skrivs efter UI-skalet.
+
+## 1. Vad MAIN är
+
+En launchpad på Robinhood Chain där vem som helst skapar en coin "parad" mot en KOL (en trader på FOMO-appen). Trading-fees går automatiskt till KOL:ens FOMO-wallet. KOL:en kan endorsa coinen via X-login och får då dubbla fees. Launchen sker på Pons V2, MAIN är identitetslager + fee-router + frontend.
+
+## 2. Fakta om underliggande system (verifierat 2026-09-07)
+
+### Robinhood Chain
+- Arbitrum Orbit L2, EVM. Gas i ETH. Lanserad 2026-07-01.
+
+### Pons V2 (github.com/ponsdotdev/ponsfamily, MIT)
+- Factory: `0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e`
+- `launchToken(TokenParams params, uint256 launchConfigId, address pairToken) payable` – `msg.value == launchFee`. `TokenParams` innehåller `creatorFeeRecipient` och `creatorTaxBps` (≤ `maxCreatorTaxBps`, 10 %). Event `TokenLaunched(token, curve, deployer, pairToken, launchConfigId, graduationThreshold)`.
+- Fee: 1 % på quote-benet, 70 % creator / 30 % protokoll. Creator-tax betalas 100 % till `creatorFeeRecipient`. Fee-policy snapshottas per launch, kan inte ändras efteråt.
+- Fees för ETH-parade launches är **native ETH**, krediteras till `IPonsV2FeeEscrow` per mottagaradress. `claim()` betalar ut `balanceOf(msg.sender)`. Ledgern är per adress, inte per coin.
+- `transferCreatorFeeRecipient(token, newRecipient)` – bara nuvarande mottagare. Pons-ägaren kan föreslå ny mottagare med timelock (`setCreatorFeeRecipient`), risk vi accepterar och övervakar via event.
+- Fees sopas (`FeesSwept`) av Pons sweep-operator; utbetalningstakt beror på deras sweeps.
+
+### FOMO (fomo.family)
+- Inget officiellt API. Inofficiella: fomoapi.io (Bearer-key, credits: gratis 1000/mån, Starter 49 USD 10k), fomoscan.sh, YvesxDev/fomo-wallet-resolver (open source, använder FOMO:s interna Privy-API).
+- Wallets är Privy-embedded. EVM-adress går att resolva först efter att användaren gjort en EVM-swap i appen.
+- FOMO stödjer Robinhood Chain sedan 2026-07-10; Pons-tokens listas automatiskt på `fomo.family/tokens/robinhood/<addr>`.
+- FOMO visar native ETH som saldo; WETH visas bara som token-rad.
+
+## 3. Fee-modell (låst)
+
+`creatorTaxBps = 300`. Splittern får 0,7 % (Pons-andel) + 3 % (tax) = 3,7 % av volymen.
+
+| Mottagare | Standard | Efter endorse |
+|---|---|---|
+| KOL | 1,0 % | 2,0 % |
+| Launcher | 0,5 % | 0,5 % |
+| MAIN | 2,2 % | 1,2 % |
+
+I bps av splitterns intag (3,7 % = 10000 bps): KOL 2703 → 5405, launcher 1351, MAIN resten.
+
+## 4. Produktbeslut
+
+- **Endorse:** "Logga in med X" (OAuth). Backend matchar X-handle mot FOMO-profil i vår DB. MAIN-signerare sätter `endorsed` på klonen. Wallet-signering som alternativ senare.
+- **KOL-lista:** fomoapi leaderboard (24h/7d/30d/all, topp 200–500), synk varje timme, wallets resolvade och cachade. Fritt FOMO-handle tillåts men köas för resolving innan launch låses upp.
+- **Handel:** v1 = launch + visning. Köpknapp deep-linkar till FOMO-appen och Pons. Köp-panel på MAIN byggs senare (plats reserverad i layouten).
+- **Launcher-wallet:** MetaMask/Rabby/Coinbase via wagmi. Privy senare.
+- **Oresolvad KOL-wallet:** klonen håller KOL-andelen tills adress sätts.
+- **Utbetalning:** `distribute()` är permissionless; MAIN kör cron över klonar med saldo över tröskel.
+
+## 5. Systemöversikt (godkänd)
+
+1. **Kontrakt** (Foundry): `MainSplitterFactory` skapar EIP-1167-klon per coin. Klon = `creatorFeeRecipient` hos Pons. `distribute()` claimar från escrow och delar ut. `setEndorsed`, `setKolWallet` av MAIN-signerare.
+2. **Backend** (Supabase): tabeller för kols, wallets, coins, endorsements, x_sessions. Edge Functions: leaderboard-synk (cron 1h), Pons-event-indexer, X OAuth-callback, endorse-signering, distribute-cron.
+3. **Frontend** (Vite + React + TS + Tailwind v4 + wagmi): FOMO-tokens i `@theme`, Satoshi. Sidor: Hem (KOL-leaderboard + senaste coins), KOL-sida, Coin-sida, Launch-flöde, Endorse-flöde, Mina fees.
+4. **Hosting:** Cloudflare Pages + Supabase.
+
+Flöden: se konversationslogg 2026-09-07 (launch, endorse, utbetalning) – sammanfattade ovan.
+
+## 6. Design-tokens (från FOMO:s CSS-bundle, root-v2)
+
+```
+--color-bg-primary:#060510  --color-bg-secondary:#12111a
+--color-bg-tertiary-solid:#161522  --color-bg-tertiary:#cbd0eb1a
+--color-primary:#516af6  --color-accent-primary-transparent:#516af629
+--color-accent-secondary:#221d4b
+--color-text-primary:#f7f7f7  --color-text-secondary:#9899a3  --color-text-tertiary:#474b52
+--color-border:#474b52  --color-input:#474b52
+--color-green:#21c95e (#21c95e33)  --color-red:#ff622e (#ff622e33)
+--color-yellow:#ffbf17  --color-warning:#ffc74f  --color-dev:#fd5dd3
+--radius: 6/8/12/16/24px + full   --blur: 8/12/24px
+body: font-weight 500, antialiased, color-scheme dark
+Glas: bg rgba(255,255,255,.12), border .8px solid rgba(203,208,235,.1), backdrop-filter blur(12px), radius 12px
+Primärknapp-glas: bg rgba(96,106,247,.5) + samma border/blur
+Rubriker: weight 500, letter-spacing ≈ -0.05em
+```
+
+Font: Satoshi 400/500/700 (Fontshare) nu; Aeonik när licens köpts. Ingen FOMO-logga eller namn.
+
+## 7. Öppna punkter (del 2–4)
+- Exakt klon-ABI, CREATE2-prediktion vs. två transaktioner.
+- Verifiera escrow-adress on-chain (implementationen finns inte i repot).
+- fomoapi vs fomoscan som primär källa, kostnadstak.
+- Testplan: Foundry-tester för split/endorse, fork-test mot Pons på Robinhood Chain.
