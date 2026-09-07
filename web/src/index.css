@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Design tokens — extracted from fomo.family root-v2 bundle. Swap Satoshi → Aeonik when licensed. */
+/* Design tokens — palette extracted from fomo.family. Font: Satoshi now, Aeonik when licensed. */
 @theme {
   --font-sans: "Satoshi", "Aeonik", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -54,34 +54,76 @@
     -moz-osx-font-smoothing: grayscale;
     margin: 0;
     min-height: 100dvh;
+    overflow-x: hidden;
   }
-  h1, h2, h3 { font-weight: 500; letter-spacing: -0.04em; }
+  h1, h2, h3 { font-weight: 700; letter-spacing: -0.035em; }
   button { font-family: inherit; cursor: pointer; }
   input, textarea { font-family: inherit; }
   ::selection { background: var(--color-primary-transparent); }
+  :focus-visible { outline: 2px solid rgba(81, 106, 246, 0.8); outline-offset: 2px; border-radius: 8px; }
 }
 
+/* ---------- Liquid glass system ----------
+   Three surface levels:
+   .panel  — floating glass sheet (blur + saturate, specular top edge, soft drop)
+   .well   — recessed darker glass inside a panel (inputs, numbers, chart)
+   .hair   — hairline divider between rows inside a panel
+*/
+@utility panel {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.085) 0%, rgba(255, 255, 255, 0.035) 40%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 24px 60px -28px rgba(0, 0, 0, 0.75),
+    0 0 0 0.5px rgba(81, 106, 246, 0.08);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+}
+@utility panel-strong {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.05) 45%, rgba(255, 255, 255, 0.03) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    0 30px 80px -30px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+}
+@utility well {
+  background: linear-gradient(180deg, rgba(6, 5, 16, 0.55), rgba(6, 5, 16, 0.4));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45), inset 0 0 0 0.5px rgba(255, 255, 255, 0.03);
+}
+@utility hair {
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+}
+@utility row-hover {
+  transition: background-color 160ms ease;
+  &:hover { background-color: rgba(255, 255, 255, 0.045); }
+}
 @utility glass {
-  background-color: rgba(255, 255, 255, 0.12);
-  border: 0.8px solid rgba(203, 208, 235, 0.1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.07));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
 }
 @utility glass-primary {
-  background-color: rgba(96, 106, 247, 0.5);
-  border: 0.8px solid rgba(203, 208, 235, 0.1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: linear-gradient(180deg, rgba(120, 136, 255, 0.9), rgba(81, 106, 246, 0.85) 55%, rgba(66, 86, 220, 0.9));
+  border: 1px solid rgba(160, 172, 255, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 10px 30px -10px rgba(81, 106, 246, 0.7);
 }
-@utility glass-dark {
-  background-color: rgba(18, 17, 26, 0.72);
-  border: 0.8px solid rgba(203, 208, 235, 0.08);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-}
-@utility card {
-  background-color: var(--color-bg-secondary);
-  border: 0.8px solid rgba(203, 208, 235, 0.06);
+@utility glass-green {
+  background: linear-gradient(180deg, rgba(64, 224, 120, 0.95), rgba(33, 201, 94, 0.95));
+  border: 1px solid rgba(160, 255, 190, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 30px -10px rgba(33, 201, 94, 0.6);
 }
 @utility tabular {
   font-variant-numeric: tabular-nums;
@@ -91,10 +133,53 @@
   &::-webkit-scrollbar { display: none; }
 }
 
-/* Subtle cosmic backdrop like fomo's landing */
-.bg-space {
-  background:
-    radial-gradient(1200px 600px at 50% -200px, rgba(81, 106, 246, 0.18), transparent 60%),
-    radial-gradient(800px 400px at 90% 10%, rgba(34, 29, 75, 0.6), transparent 60%),
-    var(--color-bg-primary);
+/* ---------- Ambient background: aurora + grain ---------- */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: var(--color-bg-primary);
 }
+.ambient::after {
+  /* film grain so blur has texture to chew on */
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.045;
+  mix-blend-mode: screen;
+}
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.85;
+  will-change: transform;
+}
+.orb-1 { width: 70vw; height: 70vw; max-width: 900px; max-height: 900px; left: -15vw; top: -30vw; background: radial-gradient(circle at 40% 40%, rgba(81, 106, 246, 0.55), rgba(34, 29, 75, 0.35) 45%, transparent 70%); animation: drift1 38s ease-in-out infinite alternate; }
+.orb-2 { width: 55vw; height: 55vw; max-width: 760px; max-height: 760px; right: -20vw; top: 10vh; background: radial-gradient(circle at 50% 50%, rgba(140, 90, 255, 0.35), rgba(253, 93, 211, 0.12) 50%, transparent 72%); animation: drift2 46s ease-in-out infinite alternate; }
+.orb-3 { width: 60vw; height: 60vw; max-width: 800px; max-height: 800px; left: 20vw; bottom: -35vw; background: radial-gradient(circle at 50% 50%, rgba(33, 201, 94, 0.14), rgba(81, 106, 246, 0.18) 45%, transparent 72%); animation: drift3 52s ease-in-out infinite alternate; }
+
+@keyframes drift1 { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(8vw, 6vh, 0) scale(1.08); } }
+@keyframes drift2 { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(-10vw, 8vh, 0) scale(0.94); } }
+@keyframes drift3 { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-6vw, -8vh, 0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .orb { animation: none !important; }
+}
+
+/* Chart grid texture inside wells */
+.dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+/* Shimmer for skeletons */
+.shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.11) 50%, rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
