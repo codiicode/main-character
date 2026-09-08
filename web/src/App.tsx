@@ -1,5 +1,5 @@
 import { Outlet, NavLink, Link, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Search, Plus, Users, Wallet } from 'lucide-react'
+import { Home, Search, Plus, Users, Wallet, Coins } from 'lucide-react'
 import { Button } from './components/ui'
 import { ConnectButton } from './components/Connect'
 
@@ -16,7 +16,7 @@ export default function App() {
   const nav = useNavigate()
   const tabs = [
     { to: '/', icon: Home, label: 'Home' },
-    { to: '/search', icon: Search, label: 'Search' },
+    { to: '/tokens', icon: Coins, label: 'Coins' },
     { to: '/launch', icon: Plus, label: 'Launch' },
     { to: '/kols', icon: Users, label: 'KOLs' },
     { to: '/me', icon: Wallet, label: 'Me' },
