@@ -6,10 +6,17 @@ type TurnstileApi = {
   remove: (id: string) => void
 }
 
-/** Cloudflare Turnstile widget. Calls onToken with a fresh token, or '' when it expires. */
+const TEST_KEY = TURNSTILE_SITE_KEY.startsWith('1x0000')
+
+/** Cloudflare Turnstile widget. Calls onToken with a fresh token, or '' when it expires.
+ *  With the test key (no real widget configured yet) nothing is rendered and a placeholder token is passed. */
 export function Turnstile({ onToken }: { onToken: (token: string) => void }) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
+    if (TEST_KEY) {
+      onToken('test')
+      return
+    }
     let id: string | null = null
     let cancelled = false
     const mount = () => {
@@ -32,5 +39,6 @@ export function Turnstile({ onToken }: { onToken: (token: string) => void }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+  if (TEST_KEY) return null
   return <div ref={ref} className="min-h-[65px]" />
 }
