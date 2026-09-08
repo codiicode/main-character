@@ -27,9 +27,11 @@ let inflight: Promise<Payload> | null = null
 export function loadKols(): Promise<Payload> {
   if (cache) return Promise.resolve(cache)
   if (!inflight) {
-    inflight = fetch('/data/kols.json')
+    // Live snapshot from the cron worker first, the build-time file as fallback.
+    inflight = fetch('/api/kols')
+      .then((r) => (r.ok ? r : fetch('/data/kols.json')))
       .then((r) => {
-        if (!r.ok) throw new Error(`kols.json HTTP ${r.status}`)
+        if (!r.ok) throw new Error(`kols HTTP ${r.status}`)
         return r.json() as Promise<Payload>
       })
       .then((p) => {

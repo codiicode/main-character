@@ -8,3 +8,5 @@ contracts/cache
 contracts/broadcast
 web/.env.local
 web/.wrangler
+worker/node_modules
+worker/.wrangler

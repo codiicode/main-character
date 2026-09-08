@@ -1,0 +1,1 @@
+{"name":"main-cron","private":true,"type":"module","scripts":{"deploy":"wrangler deploy","check":"tsc --noEmit"},"dependencies":{"viem":"^2.56.3"},"devDependencies":{"@cloudflare/workers-types":"^5.20260908.1","typescript":"^7.0.2","wrangler":"^4.129.1"}}
