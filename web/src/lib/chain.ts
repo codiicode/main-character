@@ -1,8 +1,10 @@
 import { defineChain } from 'viem'
-import { createConfig, http, type CreateConnectorFn } from 'wagmi'
+import { createConfig, http, fallback, type CreateConnectorFn } from 'wagmi'
 import { injected, mock, walletConnect } from 'wagmi/connectors'
 
 const RPC = (import.meta.env.VITE_RPC as string | undefined) || 'https://rpc.mainnet.chain.robinhood.com'
+/** Public mirrors used when the official RPC rate-limits. */
+export const RPC_FALLBACKS = ((import.meta.env.VITE_RPC_FALLBACKS as string | undefined) || '').split(',').map((s) => s.trim()).filter(Boolean).length ? [RPC, ...((import.meta.env.VITE_RPC_FALLBACKS as string).split(',').map((s) => s.trim()).filter(Boolean))] : [RPC]
 
 export const robinhoodChain = defineChain({
   id: 4663,
@@ -36,7 +38,7 @@ const connectors: CreateConnectorFn[] = devMock
 export const wagmiConfig = createConfig({
   chains: [robinhoodChain],
   connectors,
-  transports: { [robinhoodChain.id]: http(RPC) },
+  transports: { [robinhoodChain.id]: fallback(RPC_FALLBACKS.map((u) => http(u))) },
 })
 
 declare module 'wagmi' {

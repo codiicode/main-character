@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { createPublicClient, http, formatEther, parseAbi, type Abi, type Address } from 'viem'
-import { robinhoodChain, MAIN_LAUNCHER_ADDRESS, MAIN_START_BLOCK, PONS_FACTORY_ADDRESS, HIDDEN_COINS } from '../lib/chain'
+import { createPublicClient, http, fallback, formatEther, parseAbi, type Abi, type Address } from 'viem'
+import { robinhoodChain, MAIN_LAUNCHER_ADDRESS, MAIN_START_BLOCK, PONS_FACTORY_ADDRESS, HIDDEN_COINS, RPC_FALLBACKS } from '../lib/chain'
 import { launcherAbi, splitterAbi } from '../lib/launcher'
 import { coins as mockCoins } from './mock'
 
@@ -46,7 +46,7 @@ const ponsAbi = parseAbi([
   'function getLaunchedToken(address token) view returns ((address token,address curve,address deployer,address creatorFeeRecipient,address pairToken,uint256 graduationThreshold,uint24 poolFee,int24 tickSpacing,uint16 creatorTaxBps,bool buybackEnabled,uint8 phase,uint256 sweptQuote,uint256 sweptTokens,uint256 sweptAt,bool exists))',
 ])
 
-export const client = createPublicClient({ chain: robinhoodChain, transport: http(robinhoodChain.rpcUrls.default.http[0]) })
+export const client = createPublicClient({ chain: robinhoodChain, transport: fallback(RPC_FALLBACKS.map((u) => http(u))) })
 
 let ethUsd = 2500
 let ethUsdAt = 0
