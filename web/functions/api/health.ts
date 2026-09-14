@@ -12,7 +12,9 @@ async function rpc(url: string, method: string, params: unknown[] = []) {
 
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   const url = env.RPC_URL || 'https://rpc.mainnet.chain.robinhood.com'
-  const out: Record<string, unknown> = { rpc: url.replace(/(v2/|dkey=)[^const out: Record<string, unknown> = { rpc: url, launcher/]+/, '$1***'), launcher: env.MAIN_LAUNCHER ?? null, kv: !!env.MAIN_KV }
+  // Never echo the provider key.
+  const masked = url.replace(/(\/v2\/|dkey=)[^&/?]+/, '$1***')
+  const out: Record<string, unknown> = { rpc: masked, launcher: env.MAIN_LAUNCHER ?? null, kv: !!env.MAIN_KV }
   try {
     out.chainId = await rpc(url, 'eth_chainId')
     out.block = await rpc(url, 'eth_blockNumber')
