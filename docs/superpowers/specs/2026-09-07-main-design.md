@@ -130,3 +130,10 @@ Kontrakt: `MainLauncher.Shares{kol 3125, endorsed 3125, launcher 1563, tax 250}`
 `BuybackVault.buyAndBurn` köper på $MAIN:s Pons-kurva och bränner (ERC20Burnable); efter graduation krävs en router (`setRouter`, ej byggd än). Cron-workern kör `TreasurySplit.distribute` och `buyAndBurn` varje timme (env `TREASURY_SPLIT`, `BUYBACK_VAULT`).
 Deploy: `contracts/script/DeployV2.s.sol` (Leo, DEPLOYER_PK). Kräver ny MainLauncher-adress i `web/.env.production` + Pages-secret `MAIN_LAUNCHER` + worker `MAIN_LAUNCHER` var.
 Tester: 28 unit + fork.
+
+## 11. Mainnet v2 deploy 2026-09-14 (block 62816232)
+- MainLauncher v2 **0x7ee51609a1829970C9CC7d4fF3A7c3E895E0D322** (owner 0xB9a5…cd02, signer/relayer 0x5332…CF62)
+- TreasurySplit **0x4E5fF0A7812A49CdC36aC04aEa3ABcF8b7A4b621** (vault 5 : founder 12)
+- BuybackVault **0x727000B62A210c8a2876CbC2fB6840B36EF2e313** (token ej satt förrän $MAIN launchas)
+- Splitter impl 0x909f033181166072010aADa0521545eE61510492
+- v1-launcher 0xce0f…4dC4 är pensionerad; dess tre testcoins syns inte längre.
