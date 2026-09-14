@@ -42,13 +42,13 @@ export default function Kol() {
               <div className="text-text-secondary text-[15px] truncate">@{k.handle}{k.clan ? ` in ${k.clan}` : ''}{rank24 ? `, #${rank24} today` : ''}</div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {k.wallets.evm ? <Tag tone="green">{shortAddr(k.wallets.evm)}</Tag> : <Tag tone="yellow">Wallet pending</Tag>}
-                {endorsed && <Tag tone="primary">Endorsing, 2× fees</Tag>}
+                {endorsed && <Tag tone="primary">Endorsed</Tag>}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <IconButton label="Watch" className={watch.has(watchKey('kol', k.handle)) ? 'text-warning' : ''} onClick={() => watch.toggle(watchKey('kol', k.handle))}><Star size={18} fill={watch.has(watchKey('kol', k.handle)) ? 'currentColor' : 'none'} /></IconButton>
-            <ShareButton size="sm" input={{ title: k.name, subtitle: `@${k.handle} on MAIN`, line: my.length ? `${endorsed ? '2%' : '1%'} of every trade goes to @${k.handle}` : `Launch a coin for @${k.handle}`, stat: earned > 0 ? `+${fmtEth(earned)} paid so far` : `${fmtCount(k.followers)} followers on FOMO`, avatar: k.avatar, hue, url: `${location.origin}/kol/${k.handle}`, endorsed }} />
+            <ShareButton size="sm" input={{ title: k.name, subtitle: `@${k.handle} on MAIN`, line: my.length ? `1% of every trade goes to @${k.handle}` : `Launch a coin for @${k.handle}`, stat: earned > 0 ? `+${fmtEth(earned)} paid so far` : `${fmtCount(k.followers)} followers on FOMO`, avatar: k.avatar, hue, url: `${location.origin}/kol/${k.handle}`, endorsed }} />
           </div>
         </div>
 

@@ -116,7 +116,24 @@ contract MainLauncher is Ownable2Step, ReentrancyGuard {
         nonReentrant
         returns (address token, address curve, address splitter)
     {
-        return _launch(input, msg.sender);
+        return _launch(input, msg.sender, shares, treasury);
+    }
+
+    /**
+     * @notice Owner-only launch with its own fee terms and fee sink. Used for the platform token, which has no
+     *         KOL and no outside launcher: `launcher` receives the launcher share, `kolAccounts` are the team,
+     *         and `treasury_` (e.g. the buyback vault) takes the remainder.
+     */
+    function launchWithShares(LaunchInput calldata input, address launcher, Shares calldata shares_, address treasury_)
+        external
+        payable
+        onlyOwner
+        nonReentrant
+        returns (address token, address curve, address splitter)
+    {
+        if (launcher == address(0) || treasury_ == address(0)) revert ZeroAddress();
+        if (uint256(shares_.endorsedKolBps) + shares_.launcherBps > 10_000 || shares_.kolBps > shares_.endorsedKolBps) revert BadShares();
+        return _launch(input, launcher, shares_, treasury_);
     }
 
     /**
@@ -132,10 +149,10 @@ contract MainLauncher is Ownable2Step, ReentrancyGuard {
     {
         if (msg.sender != relayer && msg.sender != owner()) revert NotRelayer();
         if (launcher == address(0)) revert ZeroAddress();
-        return _launch(input, launcher);
+        return _launch(input, launcher, shares, treasury);
     }
 
-    function _launch(LaunchInput calldata input, address launcher)
+    function _launch(LaunchInput calldata input, address launcher, Shares memory s, address treasury_)
         private
         returns (address token, address curve, address splitter)
     {
@@ -148,11 +165,11 @@ contract MainLauncher is Ownable2Step, ReentrancyGuard {
         MainSplitter(payable(splitter)).initialize(
             address(this),
             launcher,
-            treasury,
+            treasury_,
             escrow,
-            shares.kolBps,
-            shares.endorsedKolBps,
-            shares.launcherBps,
+            s.kolBps,
+            s.endorsedKolBps,
+            s.launcherBps,
             input.kolAccounts,
             input.kolWeights
         );
@@ -165,7 +182,7 @@ contract MainLauncher is Ownable2Step, ReentrancyGuard {
             description: input.description,
             socials: input.socials,
             creatorFeeRecipient: splitter,
-            creatorTaxBps: shares.creatorTaxBps,
+            creatorTaxBps: s.creatorTaxBps,
             buybackEnabled: false,
             expectedEconomics: input.expectedEconomics,
             salt: input.salt

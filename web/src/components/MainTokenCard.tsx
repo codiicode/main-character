@@ -18,7 +18,7 @@ export function MainTokenCard() {
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-[26px] md:text-[30px] font-bold leading-none">$MAIN {main ? <Tag tone="green">Live</Tag> : <Tag tone="primary">Coming soon</Tag>}</div>
-          <div className="text-text-secondary text-[14px] mt-1.5">The platform token. Every fee MAIN earns flows back to it.</div>
+          <div className="text-text-secondary text-[14px] mt-1.5">The platform token. 0.5% of every trade on MAIN buys it back and burns it.</div>
         </div>
       </div>
 
@@ -43,7 +43,7 @@ export function MainTokenCard() {
           <div className="relative mt-5 grid grid-cols-3 gap-2">
             {[
               ['Launches on', 'Pons V2'],
-              ['Fees to holders', 'Buyback'],
+              ['0.5% of all fees', 'Buy & burn'],
               ['Supply', '1B'],
             ].map(([l, v]) => (
               <div key={l} className="well rounded-xl px-3 py-2"><div className="text-[12px] text-text-secondary">{l}</div><div className="text-[16px] font-bold tabular">{v}</div></div>

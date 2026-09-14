@@ -114,6 +114,10 @@ contract MockFactory {
     }
 
     function transferCreatorFeeRecipient(address, address) external {}
+
+    function setPhase(address token, uint8 phase) external {
+        launched[token].phase = IPonsV2LaunchFactory.GraduationPhase(phase);
+    }
 }
 
 /// A recipient that refuses ETH, to exercise the deferred-payout path.
@@ -125,6 +129,12 @@ contract Rejecter {
 
 contract MockToken {
     mapping(address => uint256) public balanceOf;
+    uint256 public totalBurned;
+
+    function burn(uint256 amount) external {
+        balanceOf[msg.sender] -= amount;
+        totalBurned += amount;
+    }
 
     function mint(address to, uint256 amount) external {
         balanceOf[to] += amount;

@@ -332,7 +332,7 @@ export default function Launch() {
                   <div><span className="text-green font-bold text-[15px]">1%</span><br />{mode === 'KOL' ? 'to the KOL' : 'shared by the clan'}</div>
                   <div><span className="text-warning font-bold text-[15px]">0.5%</span><br />to you</div>
                 </div>
-                <div className="text-[12px] text-text-tertiary mt-2.5">When the KOL endorses, their share doubles to 2%. Your 0.5% never changes.</div>
+                <div className="text-[12px] text-text-tertiary mt-2.5">Another 0.5% buys and burns $MAIN. Your 0.5% is locked in for the life of the coin.</div>
               </div>
               {free ? (
                 <div className="well rounded-2xl p-3.5">

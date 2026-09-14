@@ -60,7 +60,7 @@ export default function Home() {
         <div>
           <h1 className="text-[40px] md:text-[60px] leading-[0.96] max-w-[13ch]">Every trader is a main character.</h1>
           <p className="text-text-secondary mt-4 text-[16px] md:text-[18px] max-w-[54ch] leading-relaxed">
-            Launch a coin for any KOL or clan on FOMO. Trading fees land in their wallet from the first trade. When they endorse it, their share doubles.
+            Launch a coin for any KOL or clan on FOMO. 1% of every trade lands in their wallet, 0.5% in yours, and 0.5% buys and burns $MAIN.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-2.5">
             <Button variant="primary" size="lg" to="/launch">Launch a coin</Button>

@@ -51,7 +51,7 @@ export default function Coin() {
   if (!c) return <Empty title="Coin not found" body="This address isn't a MAIN coin." action={<Button to="/" variant="glass">Back to leaderboard</Button>} />
   const k = c.kind === 'KOL' ? kols.find((x) => x.handle.toLowerCase() === c.kolRef.toLowerCase()) : undefined
   const hue = hueFor(c.kolRef)
-  const kolPct = c.endorsed ? '2%' : '1%'
+  const kolPct = '1%'
   const copy = () => { navigator.clipboard?.writeText(c.address); setCopied(true); setTimeout(() => setCopied(false), 1200) }
   const priceUsd = c.priceEth * usd
 
@@ -121,19 +121,21 @@ export default function Coin() {
           <Panel className="mt-5 p-4 md:p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-[18px]">Where every trade's fee goes</h3>
-              {c.endorsed ? <Tag tone="primary">Endorsed, 2×</Tag> : <Tag tone="muted">Not endorsed yet</Tag>}
+              {c.endorsed ? <Tag tone="primary">Endorsed by the KOL</Tag> : <Tag tone="muted">Not endorsed yet</Tag>}
             </div>
             <div className="h-3.5 rounded-full overflow-hidden flex well p-[2px] gap-[2px]">
-              <div className="rounded-full bg-green" style={{ width: c.endorsed ? '80%' : '66.6%' }} />
-              <div className="rounded-full bg-warning flex-1" />
+              <div className="rounded-full bg-green" style={{ width: '50%' }} />
+              <div className="rounded-full bg-warning" style={{ width: '25%' }} />
+              <div className="rounded-full bg-dev flex-1" />
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-[14px]">
+            <div className="mt-3 grid grid-cols-3 gap-2 text-[14px]">
               <div><div className="flex items-center gap-1.5 text-text-secondary"><span className="w-2 h-2 rounded-full bg-green" /> {c.kind === 'KOL' ? '@' + c.kolRef : c.kolRef + ' clan'}</div><div className="font-bold tabular text-[20px]">{kolPct}</div><div className="text-text-secondary text-[12px]">{c.kind === 'KOL' ? 'of every trade, to their FOMO wallet' : `of every trade, split across ${c.kolAccounts.length} members`}</div></div>
               <div><div className="flex items-center gap-1.5 text-text-secondary"><span className="w-2 h-2 rounded-full bg-warning" /> Launcher</div><div className="font-bold tabular text-[20px]">0.5%</div><div className="text-text-secondary text-[12px] font-mono">{c.launcher ? short(c.launcher) : 'demo'}</div></div>
+              <div><div className="flex items-center gap-1.5 text-text-secondary"><span className="w-2 h-2 rounded-full bg-dev" /> $MAIN burn</div><div className="font-bold tabular text-[20px]">0.5%</div><div className="text-text-secondary text-[12px]">buys and burns $MAIN</div></div>
             </div>
             {!c.endorsed && c.kind === 'KOL' && (
               <div className="mt-4 well rounded-2xl p-3.5 text-[14px] flex flex-col sm:flex-row sm:items-center gap-3">
-                <span className="flex-1">Are you <b>@{c.kolRef}</b>? Endorse this coin and your share doubles to 2%.</span>
+                <span className="flex-1">Are you <b>@{c.kolRef}</b>? Endorse this coin to get the verified badge and show it's really you.</span>
                 <Button size="sm" variant="primary" to={`/endorse/${c.address}`}>Endorse with X</Button>
               </div>
             )}

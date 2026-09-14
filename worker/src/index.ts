@@ -11,6 +11,8 @@ export interface Env {
   MAIN_LAUNCHER: string
   PAYOUT_MIN_ETH: string
   RELAYER_PK: string
+  TREASURY_SPLIT?: string
+  BUYBACK_VAULT?: string
   RPC_URL?: string
   FOMOAPI_KEY?: string
   CRON_KEY?: string
@@ -31,6 +33,8 @@ const launcherAbi = parseAbi([
   'function sweepAndDistributeMany(address[] list)',
 ])
 const splitterAbi = parseAbi(['function claimable() view returns (uint256)'])
+const treasuryAbi = parseAbi(['function pending() view returns (uint256)', 'function distribute() returns (uint256)'])
+const vaultAbi = parseAbi(['function ready() view returns (bool)', 'function buyAndBurn(uint256 minTokensOut) returns (uint256 spent, uint256 burned)'])
 const curveAbi = parseAbi(['function quoteFeeBalance() view returns (uint256)', 'function creatorTaxBalance() view returns (uint256)'])
 const ponsAbi = parseAbi([
   'function getLaunchedToken(address token) view returns ((address token,address curve,address deployer,address creatorFeeRecipient,address pairToken,uint256 graduationThreshold,uint24 poolFee,int24 tickSpacing,uint16 creatorTaxBps,bool buybackEnabled,uint8 phase,uint256 sweptQuote,uint256 sweptTokens,uint256 sweptAt,bool exists))',
@@ -78,6 +82,26 @@ export async function runPayouts(env: Env): Promise<Record<string, unknown>> {
     const hash = await wallet.writeContract({ address: launcher, abi: launcherAbi, functionName: 'sweepAndDistributeMany', args: [batch] })
     await pub.waitForTransactionReceipt({ hash })
     hashes.push(hash)
+  }
+  // Forward the platform share (treasury split) and burn $MAIN when the vault has enough.
+  if (env.TREASURY_SPLIT) {
+    const t = env.TREASURY_SPLIT as Address
+    const p = await pub.readContract({ address: t, abi: treasuryAbi, functionName: 'pending' })
+    if (p >= min) {
+      const h = await wallet.writeContract({ address: t, abi: treasuryAbi, functionName: 'distribute' })
+      await pub.waitForTransactionReceipt({ hash: h })
+      hashes.push(h)
+      result.treasuryForwarded = formatEther(p)
+    }
+  }
+  if (env.BUYBACK_VAULT) {
+    const v = env.BUYBACK_VAULT as Address
+    if (await pub.readContract({ address: v, abi: vaultAbi, functionName: 'ready' })) {
+      const h = await wallet.writeContract({ address: v, abi: vaultAbi, functionName: 'buyAndBurn', args: [0n] })
+      await pub.waitForTransactionReceipt({ hash: h })
+      hashes.push(h)
+      result.burned = true
+    }
   }
   result.txs = hashes
   await env.MAIN_KV.put('cron:payouts:last', JSON.stringify({ at: new Date().toISOString(), ...result }))

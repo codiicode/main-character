@@ -112,3 +112,21 @@ Satta: `FOMOAPI_KEY`, `SESSION_SECRET`. Saknas: `X_CLIENT_ID`, `X_CLIENT_SECRET`
 - owner (deploy-wallet) 0xB9a5753422657Cdb04f4c95b30Ee5bb26C0Ecd02, treasury 0x0B1c79A94e6e933eD3531FE11A9cD03ce1369966, signer = relayer 0x5332A888A09b128Bf84e2ce75634CCb60026CF62
 - Shares 2703/5405/1351, tax 300. Domän: maincharacter.family (Cloudflare-zon, DNS-poster ska vara CNAME → main-character-c38.pages.dev).
 - Frontend: `web/.env.production` (VITE_MAIN_LAUNCHER, VITE_MAIN_START_BLOCK, VITE_RPC). Pages-secrets: MAIN_LAUNCHER, MAIN_START_BLOCK.
+
+## 10. Fee-modell v2 (beslutad 2026-09-14, ersätter §3)
+
+Endorse-bonusen är borttagen; endorse = verifierad badge, inget mer.
+
+| | Plattforms-coins (3,5 %) | $MAIN (3,6 %) |
+|---|---|---|
+| Pons | 0,3 | 0,3 |
+| KOL | 1,0 | – |
+| Launcher | 0,5 | – |
+| Buyback & burn $MAIN | 0,5 | 0,5 |
+| Team (0xdC397056D4F851b0ab4C74Accb8aa4D9167D9F99) | – | 1,0 |
+| Founder (0x5Bc6884BAb4f2Ae87A2F18c3180C8B4E2Bfbb070) | 1,2 | 1,8 |
+
+Kontrakt: `MainLauncher.Shares{kol 3125, endorsed 3125, launcher 1563, tax 250}` → treasury = `TreasurySplit` (vault 5 : founder 12). $MAIN launchas via `launchWithShares` (owner) med `{kol 3030, endorsed 3030, launcher 5455, tax 260}`, launcher = founder, kolAccounts = [team], treasury = `BuybackVault`.
+`BuybackVault.buyAndBurn` köper på $MAIN:s Pons-kurva och bränner (ERC20Burnable); efter graduation krävs en router (`setRouter`, ej byggd än). Cron-workern kör `TreasurySplit.distribute` och `buyAndBurn` varje timme (env `TREASURY_SPLIT`, `BUYBACK_VAULT`).
+Deploy: `contracts/script/DeployV2.s.sol` (Leo, DEPLOYER_PK). Kräver ny MainLauncher-adress i `web/.env.production` + Pages-secret `MAIN_LAUNCHER` + worker `MAIN_LAUNCHER` var.
+Tester: 28 unit + fork.

@@ -40,7 +40,7 @@ export default function Endorse() {
     <div className="max-w-[720px] mx-auto">
       <Link to={coin ? `/coin/${coin.address}` : '/'} className="inline-flex items-center gap-1 text-text-secondary hover:text-text-primary text-[15px] mb-4"><ArrowLeft size={16} /> Back</Link>
       <h1 className="text-[34px] md:text-[44px] leading-none">Endorse</h1>
-      <p className="text-text-secondary mt-2 text-[15px] max-w-[56ch]">Prove you're the main character and your share of every trade doubles from 1% to 2%. Log in with the X account that matches your FOMO handle.</p>
+      <p className="text-text-secondary mt-2 text-[15px] max-w-[56ch]">Prove you're the main character. Your coin gets the verified badge and traders know the fees really reach you. Log in with the X account that matches your FOMO handle.</p>
 
       {coin && (
         <Panel strong className="mt-6 p-5 flex items-center gap-4">
@@ -79,7 +79,7 @@ export default function Endorse() {
               </div>
             )}
             {coin && coin.kind === 'CLAN' && <p className="text-text-secondary text-[14px] mt-4">Clan coins can't be endorsed yet.</p>}
-            {state.s === 'done' && <p className="text-green text-[14px] mt-3">Endorsed. Your share is 2% from the next payout.</p>}
+            {state.s === 'done' && <p className="text-green text-[14px] mt-3">Endorsed. Your coin now carries the verified badge.</p>}
 
             {!coin && (
               <div className="mt-5">

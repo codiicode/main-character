@@ -17,7 +17,7 @@ export default function Me() {
   const watchedCoins = watch.coins.map((a) => coins.find((c) => c.address.toLowerCase() === a)).filter(Boolean) as typeof coins
   const mine = address ? coins.filter((c) => c.launcher?.toLowerCase() === address.toLowerCase()) : []
   const asKol = address ? coins.filter((c) => c.kolAccounts.some((a) => a.toLowerCase() === address.toLowerCase())) : []
-  const earnedLauncher = mine.reduce((s, c) => s + c.feesEth * 0.1351, 0)
+  const earnedLauncher = mine.reduce((s, c) => s + c.feesEth * 0.1563, 0)
   const earnedKol = asKol.reduce((s, c) => s + c.toKolEth / Math.max(1, c.kolAccounts.length), 0)
 
   return (
@@ -82,7 +82,7 @@ export default function Me() {
                   <Link key={c.address} to={`/coin/${c.address}`} className={`row-hover flex items-center gap-3 px-4 h-16 ${i ? 'hair' : ''}`}>
                     <Avatar name={c.symbol} hue={hueFor(c.kolRef)} src={c.logo ?? k?.avatar} size={40} />
                     <div className="flex-1 min-w-0"><div className="flex items-center gap-1.5 font-bold">${c.symbol}{c.endorsed && <Verified />}</div><div className="text-[13px] text-text-secondary truncate">for {c.kind === 'KOL' ? '@' : ''}{c.kolRef}, {c.launchedAt ? `${ago(c.launchedAt)} ago` : ''}</div></div>
-                    <div className="text-right"><div className="font-bold tabular text-green">+{fmtEth(c.feesEth * 0.1351)}</div><div className="text-[12px] text-text-secondary">your 0.5%</div></div>
+                    <div className="text-right"><div className="font-bold tabular text-green">+{fmtEth(c.feesEth * 0.1563)}</div><div className="text-[12px] text-text-secondary">your 0.5%</div></div>
                   </Link>
                 )
               })}
@@ -98,7 +98,7 @@ export default function Me() {
               {asKol.map((c, i) => (
                 <Link key={c.address} to={`/coin/${c.address}`} className={`row-hover flex items-center gap-3 px-4 h-16 ${i ? 'hair' : ''}`}>
                   <Avatar name={c.symbol} hue={hueFor(c.kolRef)} src={c.logo} size={40} />
-                  <div className="flex-1 min-w-0"><div className="flex items-center gap-1.5 font-bold">${c.symbol}{c.endorsed ? <Tag tone="primary">Endorsed</Tag> : <Tag tone="muted">Endorse for 2×</Tag>}</div><div className="text-[13px] text-text-secondary truncate">{c.buyers} buyers</div></div>
+                  <div className="flex-1 min-w-0"><div className="flex items-center gap-1.5 font-bold">${c.symbol}{c.endorsed ? <Tag tone="primary">Endorsed</Tag> : <Tag tone="muted">Not endorsed</Tag>}</div><div className="text-[13px] text-text-secondary truncate">{c.buyers} buyers</div></div>
                   <div className="font-bold tabular text-green">+{fmtEth(c.toKolEth / Math.max(1, c.kolAccounts.length))}</div>
                 </Link>
               ))}
