@@ -10,3 +10,4 @@ web/.env.local
 web/.wrangler
 worker/node_modules
 worker/.wrangler
+!web/.env.production

@@ -1,7 +1,7 @@
 // GET /api/health → can the edge reach the chain RPC? Reports chain id, latest block and the raw error if not.
 import { jsonResponse } from '../_lib/fomo.js'
 
-type Env = { RPC_URL?: string; MAIN_LAUNCHER?: string; MAIN_KV?: KVNamespace }
+type Env = { RPC_URL?: string; MAIN_LAUNCHER?: string; MAIN_KV?: KVNamespace; TURNSTILE_SECRET?: string }
 
 async function rpc(url: string, method: string, params: unknown[] = []) {
   const t0 = Date.now()
@@ -14,7 +14,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   const url = env.RPC_URL || 'https://rpc.mainnet.chain.robinhood.com'
   // Never echo the provider key.
   const masked = url.replace(/(\/v2\/|dkey=)[^&/?]+/, '$1***')
-  const out: Record<string, unknown> = { rpc: masked, launcher: env.MAIN_LAUNCHER ?? null, kv: !!env.MAIN_KV }
+  const out: Record<string, unknown> = { rpc: masked, launcher: env.MAIN_LAUNCHER ?? null, kv: !!env.MAIN_KV, turnstile: !!env.TURNSTILE_SECRET }
   try {
     out.chainId = await rpc(url, 'eth_chainId')
     out.block = await rpc(url, 'eth_blockNumber')
