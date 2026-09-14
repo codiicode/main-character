@@ -28,7 +28,7 @@ export default function Me() {
       {!isConnected || !address ? (
         <Panel strong className="mt-6 p-6 md:p-8 text-center">
           <h2 className="text-[22px]">Connect a wallet</h2>
-          <p className="text-text-secondary text-[15px] mt-1 max-w-[46ch] mx-auto">MetaMask, Rabby or Coinbase Wallet on Robinhood Chain. You only need it to launch. Trading happens in FOMO.</p>
+          <p className="text-text-secondary text-[15px] mt-1 max-w-[46ch] mx-auto">MetaMask, Phantom, Rabby or Coinbase Wallet on Robinhood Chain. You only need it to launch. Trading happens in FOMO.</p>
           <div className="mt-5 flex flex-col sm:flex-row gap-2.5 justify-center items-center"><ConnectButton size="lg" /><Button variant="glass" size="lg" to="/endorse">I'm a KOL, claim with X</Button></div>
         </Panel>
       ) : (
