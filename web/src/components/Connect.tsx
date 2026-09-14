@@ -34,7 +34,7 @@ export function ConnectButton({ size = 'sm' }: { size?: 'sm' | 'md' | 'lg' }) {
             {hasExtension && injectedC && (
               <button onClick={() => { connect({ connector: injectedC }); setOpen(false) }} className="w-full text-left px-3 py-2.5 rounded-xl row-hover text-[14px]">
                 <div className="font-bold">Browser wallet</div>
-                <div className="text-text-secondary text-[12px]">MetaMask, Rabby, Coinbase Wallet</div>
+                <div className="text-text-secondary text-[12px]">MetaMask, Phantom, Rabby, Coinbase Wallet</div>
               </button>
             )}
             {wc && (
@@ -50,6 +50,7 @@ export function ConnectButton({ size = 'sm' }: { size?: 'sm' | 'md' | 'lg' }) {
                 <div className="mt-2.5 grid gap-1.5">
                   <a className="glass rounded-xl h-9 px-3 flex items-center text-[13px] font-bold" href={`https://metamask.app.link/dapp/${site}${here}`}>Open in MetaMask</a>
                   <a className="glass rounded-xl h-9 px-3 flex items-center text-[13px] font-bold" href={`https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(`https://${site}${here}`)}`}>Open in Coinbase Wallet</a>
+                  <a className="glass rounded-xl h-9 px-3 flex items-center text-[13px] font-bold" href={`https://phantom.app/ul/browse/${encodeURIComponent(`https://${site}${here}`)}?ref=${encodeURIComponent(`https://${site}`)}`}>Open in Phantom</a>
                   <a className="glass rounded-xl h-9 px-3 flex items-center text-[13px] font-bold" href={`https://link.rabby.io/dapp/${site}${here}`}>Open in Rabby</a>
                   <Link to="/launch" onClick={() => setOpen(false)} className="text-[#aab5ff] font-bold text-[13px] px-1 pt-1">Launch for free instead</Link>
                 </div>
